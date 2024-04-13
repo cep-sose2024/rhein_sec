@@ -1,41 +1,84 @@
-# KeyStorage Network mit HashiCorp Vault
+<!-- markdown project template used: https://github.com/othneildrew/Best-README-Template -->
+<a name="readme-top"></a>
 
-## Projektübersicht
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
 
-Dieses Projekt zielt darauf ab, ein sicheres und zuverlässiges KeyStorage-Netzwerk mithilfe von HashiCorp Vault für unsere IT-Firma einzurichten. HashiCorp Vault wird als zentrale Lösung für die sichere Verwaltung von Schlüsseln verwendet. Durch die Implementierung dieses KeyStorage-Netzwerks streben wir eine verbesserte Sicherheit, Compliance und Skalierbarkeit in unserer IT-Infrastruktur an.
+<br />
+<div align="center">
+  <a href="https://github.com/cep-sose2024/rhein_sec">
+    <img src="static/img/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-## Funktionen
+<h3 align="center">First of a Kind Secure Network Key Management Solution</h3>
 
-- Verwendung von HashiCorp Vault zur sicheren Speicherung von Schlüsseln, Geheimnissen und sensiblen Daten.
-- Implementierung von Zugriffskontrollen und Berechtigungen zur Sicherstellung, dass nur autorisierte Benutzer auf die gespeicherten Daten zugreifen können.
-- Konfiguration von Sicherheitsrichtlinien und Audit-Logging, um Compliance-Anforderungen zu erfüllen und Aktivitäten in Vault zu überwachen.
-- Integration von Vault mit anderen IT-Systemen und Anwendungen für eine nahtlose Verwendung von gespeicherten Geheimnissen und Schlüsseln.
+<p align="center">
+  A new network key storage solution for <a href="https://github.com/nmshd">Enmeshed</a>
+    <br />
+  </p>
+</div>
 
-## Anforderungen
+---
 
-- HashiCorp Vault (Version X.X.X)
-- Betriebssystem: Linux (empfohlen), Windows, macOS
-- Zugriff auf Netzwerkressourcen für die Kommunikation mit Vault
+<!-- ABOUT THE PROJECT -->
+## 🔍 About The Project
 
-## Installation und Konfiguration
+### What is Enmeshed?
+<a href="https://github.com/nmshd">Enmeshed</a> is a open source Project by j&s-soft, the project offeres a secure and feutreistic concept to extchange information or documents between People or organisations, the application uses end to end encryption for secure transfer and privacy, more information can be found [here](https://enmeshed.eu/explore/how_does_enmeshed_work)
 
-1. [Installieren Sie HashiCorp Vault](https://www.vaultproject.io/docs/install) gemäß den offiziellen Anweisungen.
-2. Konfigurieren Sie Vault gemäß den Sicherheitsrichtlinien und Anforderungen Ihres Unternehmens.
-3. Starten Sie Vault und überprüfen Sie die Verfügbarkeit der Dienste.
-4. Führen Sie gegebenenfalls weitere Konfigurationen und Anpassungen gemäß Ihren Projektanforderungen durch.
+### How does it work?
+This application is designed to provide a secure method for storing keys, which are currently stored insecurely to a network-based solution. This solution will be built on Hashicorp Vault and a C# ASP .NET core outward-facing API. The API will initialize user tokens and communicate with the Vault server.<br>
+The backend of the application should be capable of running securely with any similar application that wishes to store keys securely and retrieve them using a user token.
 
-## Verwendung
-
-1. Authentifizieren Sie sich bei Vault mit den bereitgestellten Anmeldeinformationen.
-2. Erstellen Sie Geheimnisse, Schlüssel oder andere sensiblen Daten gemäß Ihren Anwendungsanforderungen.
-3. Verwenden Sie Vault-APIs oder CLI-Befehle, um auf die gespeicherten Daten zuzugreifen oder diese zu verwalten.
-4. Überwachen und protokollieren Sie Aktivitäten in Vault, um die Sicherheit und Compliance zu gewährleisten.
+The client side of the application is expected to communicate with the so-called ‘Crypto Abstraction Layer’, which is yet to be released by j&s-soft.
 
 
-## Unterstützung und Feedback
+### Why Network Key storage? 
+Network key storage is designed to solve the issue of some devices not having a Hardware Security Module that is compatible with the Enmeshed application. This would still allow older, non-bleeding-edge devices to store their keys securely.
 
-Bei Fragen, Problemen oder Feedback stehen wir Ihnen gerne zur Verfügung. Bitte kontaktieren Sie das RheinSec-Team oder öffnen Sie ein Issue in diesem Repository.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Lizenz
+---
 
-Dieses Projekt ist unter der [MIT-Lizenz](LICENSE) lizenziert.
+## 👷‍♂️ Built With
+
+* ASP .NET core 8.0.
+* Hashicorp Vault 1.16.0.
+* Rust for the Client side of the application.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+## 🏃 Getting Started
+
+Since the project is still early in development, there are no releases yet. Therefore, you must run the code in an IDE. We recommend the following:
+* JetBrains RustRover for the client-side code
+* JetBrains Rider for the server-side code
+
+Additionally, you must have a HashiCorp Vault instance running on port 8200. The root token must be put in a file called `tokens.env` in the **backend/** directory. finally, make sure that the vault is also unsealed!
+
+More instructions will follow as the project progresses.
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+
+
+
+
+
+
+[contributors-shield]: https://img.shields.io/github/contributors/cep-sose2024/rhein_sec.svg?style=for-the-badge
+[contributors-url]: https://github.com/cep-sose2024/rhein_sec/graphs/contributors
+[stars-shield]: https://img.shields.io/github/stars/cep-sose2024/rhein_sec.svg?style=for-the-badge
+[stars-url]: https://github.com/cep-sose2024/rhein_sec/stargazers
+[issues-shield]: https://img.shields.io/github/issues/cep-sose2024/rhein_sec.svg?style=for-the-badge
+[issues-url]: https://github.com/cep-sose2024/rhein_sec/issues
+[license-shield]: https://img.shields.io/github/license/cep-sose2024/rhein_sec.svg?style=for-the-badge
+[license-url]: https://github.com/cep-sose2024/rhein_sec/blob/master/LICENSE
+

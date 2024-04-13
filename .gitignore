@@ -1,0 +1,4 @@
+backend/backend/tokens.env
+backend/.idea
+client/.idea
+client/target
