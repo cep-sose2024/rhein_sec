@@ -14,7 +14,7 @@ public class apidemo : ControllerBase
     [HttpGet("getToken/")]
     public async Task<IActionResult> getToken()
     {
-        var token = await _vaultCon.CreateUserToken("user");
+        var token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname);
         return Ok(token);
     }
 

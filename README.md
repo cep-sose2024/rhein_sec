@@ -54,7 +54,8 @@ Network key storage is designed to solve the issue of some devices not having a 
 ---
 ## 🏃 Getting Started
 
-Since the project is still early in development, there are no releases yet. Therefore, you must run the code in an IDE. We recommend the following:
+Since the project is still early in development, there are no releases yet. Therefore, you must run the code in an IDE.<br>
+We recommend the following:
 * JetBrains RustRover for the client-side code
 * JetBrains Rider for the server-side code
 

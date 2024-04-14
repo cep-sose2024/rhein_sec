@@ -697,11 +697,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/hadi/school/CEP/git/rhein_sec/backend/backend/backend.csproj",
+      "projectUniqueName": "/home/hadi/school/CEP/git2/rhein_sec/backend/backend/backend.csproj",
       "projectName": "backend",
-      "projectPath": "/home/hadi/school/CEP/git/rhein_sec/backend/backend/backend.csproj",
+      "projectPath": "/home/hadi/school/CEP/git2/rhein_sec/backend/backend/backend.csproj",
       "packagesPath": "/home/hadi/.nuget/packages/",
-      "outputPath": "/home/hadi/school/CEP/git/rhein_sec/backend/backend/obj/",
+      "outputPath": "/home/hadi/school/CEP/git2/rhein_sec/backend/backend/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/hadi/.nuget/NuGet/NuGet.Config"

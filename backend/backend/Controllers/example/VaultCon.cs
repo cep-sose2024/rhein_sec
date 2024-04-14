@@ -10,6 +10,9 @@ public class VaultCon
     private static readonly HttpClient client = new();
 
     private static string? _token = ReadToken();
+
+    public readonly string _defpolicyname = "user";
+    
     /*public static async Task Main(string[] args)
     {
 
@@ -21,7 +24,11 @@ public class VaultCon
         stopwatch.Stop();
         Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
     }*/
+    public VaultCon()
+    { 
+        CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy);
 
+    }
     public async Task<string> CreateUserPolicy(string policyName, string policyPermissions)
     {
         var url = $"https://localhost:8200/v1/sys/policies/acl/{policyName}";

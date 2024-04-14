@@ -1,0 +1,19 @@
+ui = true
+disable_mlock = true
+log_level = "info"
+
+storage "raft" {
+  path    = "./vault/data"
+  node_id = "node1"
+}
+
+listener "tcp" {
+  address     = "0.0.0.0:8200"
+  tls_disable = "false"
+  tls_cert_file = "/path/to/your/cert.pem"
+  tls_key_file = "/path/to/your/key.pem"
+}
+
+api_addr     = "https://127.0.0.1:8200"
+cluster_addr = "https://127.0.0.1:8201"
+max_lease_ttl = "8760h"
