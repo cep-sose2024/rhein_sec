@@ -1,0 +1,34 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        directory: ['backend']
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ matrix.directory }}
+
+    - name: Build
+      run: dotnet build ${{ matrix.directory }} --no-restore
+
+    - name: Test
+      run: dotnet test ${{ matrix.directory }} --no-build --verbosity normal
