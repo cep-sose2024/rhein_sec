@@ -38,13 +38,17 @@ jobs:
       run: dotnet publish ${{ matrix.directory }} --configuration Release --output ./publish
 
     - name: Archive production artifacts
+      shell: bash
       run: |
         if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
           tar -cvf publish-${{ matrix.os }}.tar ./publish
           gzip publish-${{ matrix.os }}.tar
-        else
-          powershell Compress-Archive -Path ./publish -DestinationPath ./publish-${{ matrix.os }}.zip
         fi
+    - name: Archive production artifacts on Windows
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        Compress-Archive -Path ./publish -DestinationPath ./publish-${{ matrix.os }}.zip
 
     - name: Get version
       id: get_version
