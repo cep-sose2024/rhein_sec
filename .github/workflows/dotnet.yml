@@ -56,7 +56,6 @@ jobs:
 
     - name: Create Release
       id: create_release
-      if: matrix.os == 'ubuntu-latest'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.release_token }}
