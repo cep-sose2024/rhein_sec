@@ -21,6 +21,7 @@ public class apidemo : ControllerBase
     [HttpPost("addSecrets/")]
     public async Task<IActionResult> addSecrets([FromBody] SecretModel secretModel)
     {
+        Console.WriteLine("test");
         var token = secretModel.Token;
         var jsonData = secretModel.Data; 
         var ret = await _vaultCon.CreateSecret(token, jsonData);
