@@ -8,32 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  create_release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-    - name: Get version
-      id: get_version
-      run: echo "::set-output name=version::$(cat misc/version)"
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.release_token }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: Release ${{ steps.get_version.outputs.version }}
-        draft: false
-        prerelease: false
-
   build:
-    needs: create_release
+
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         directory: ['backend']
 
     runs-on: ${{ matrix.os }}
@@ -61,15 +40,24 @@ jobs:
     - name: Archive production artifacts
       shell: bash
       run: |
-        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          tar -cvf publish-${{ matrix.os }}.tar ./publish
-          gzip publish-${{ matrix.os }}.tar
-        fi
-    - name: Archive production artifacts on Windows
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        Compress-Archive -Path ./publish -DestinationPath ./publish-${{ matrix.os }}.zip
+        tar -cvf publish-${{ matrix.os }}.tar ./publish
+        gzip publish-${{ matrix.os }}.tar
+
+    - name: Get version
+      id: get_version
+      run: echo "::set-output name=version::$(cat misc/version)"
+
+    - name: Create Release
+      id: create_release
+      if: github.ref == 'refs/heads/main'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.release_token }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: Release ${{ steps.get_version.outputs.version }}
+        draft: false
+        prerelease: false
 
     - name: Upload Release Asset
       id: upload-release-asset 
@@ -77,7 +65,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
-        upload_url: ${{ needs.create_release.outputs.upload_url }}
-        asset_path: ./publish-${{ matrix.os }}.${{ matrix.os == 'ubuntu-latest' && 'tar.gz' || 'zip' }}
-        asset_name: publish-${{ matrix.os }}.${{ matrix.os == 'ubuntu-latest' && 'tar.gz' || 'zip' }}
-        asset_content_type: application/${{ matrix.os == 'ubuntu-latest' && 'gzip' || 'zip' }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./publish-${{ matrix.os }}.tar.gz
+        asset_name: publish-${{ matrix.os }}.tar.gz
+        asset_content_type: application/gzip
