@@ -73,7 +73,9 @@ public class VaultCon
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var responseJson = JObject.Parse(responseContent);
-        return responseJson["auth"]["client_token"].ToString();
+        var token = responseJson["auth"]["client_token"].ToString();
+        return new JObject { ["token"] = token }.ToString();
+
     }
 
     public async Task<int> CreateSecret(string token, JObject newSecret)

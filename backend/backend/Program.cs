@@ -1,5 +1,9 @@
 var builder = WebApplication.CreateBuilder(args);
-
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.AddServerHeader = false;
+    
+});
 builder.Services.AddControllers().AddNewtonsoftJson();
 
 builder.Services.AddEndpointsApiExplorer();
