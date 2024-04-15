@@ -8,8 +8,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  create_release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+    - name: Get version
+      id: get_version
+      run: echo "::set-output name=version::$(cat misc/version)"
 
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.release_token }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        release_name: Release ${{ steps.get_version.outputs.version }}
+        draft: false
+        prerelease: false
+
+  build:
+    needs: create_release
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -50,28 +71,13 @@ jobs:
       run: |
         Compress-Archive -Path ./publish -DestinationPath ./publish-${{ matrix.os }}.zip
 
-    - name: Get version
-      id: get_version
-      run: echo "::set-output name=version::$(cat misc/version)"
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.release_token }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: Release ${{ steps.get_version.outputs.version }}
-        draft: false
-        prerelease: false
-
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        upload_url: ${{ needs.create_release.outputs.upload_url }}
         asset_path: ./publish-${{ matrix.os }}.${{ matrix.os == 'ubuntu-latest' && 'tar.gz' || 'zip' }}
         asset_name: publish-${{ matrix.os }}.${{ matrix.os == 'ubuntu-latest' && 'tar.gz' || 'zip' }}
         asset_content_type: application/${{ matrix.os == 'ubuntu-latest' && 'gzip' || 'zip' }}
