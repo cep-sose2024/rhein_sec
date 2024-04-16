@@ -22,9 +22,8 @@ public class apidemo : ControllerBase
     public async Task<IActionResult> addSecrets([FromBody] SecretModel secretModel)
     {
         var token = secretModel.Token;
-        var jsonData = secretModel.Data; 
+        var jsonData = secretModel.Data;
         var ret = await _vaultCon.CreateSecret(token, jsonData);
-        Console.WriteLine(ret);
         if (ret > 199 && ret < 300)
             return Ok(ret);
         else
@@ -37,18 +36,16 @@ public class apidemo : ControllerBase
         var token = tokenModel.Token;
 
         var ret = await _vaultCon.GetSecrets(token);
-        Console.WriteLine("getsecrets returned: " + ret);
 
         return Ok(ret);
     }
-    
+
     [HttpDelete("deleteSecrets/")]
     public async Task<IActionResult> deleteSecrets([FromBody] TokenModel tokenModel)
     {
         var token = tokenModel.Token;
 
         var ret = await _vaultCon.DeleteSecrets(token);
-        Console.WriteLine("getsecrets returned: " + ret);
 
         return Ok(ret);
     }

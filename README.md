@@ -54,11 +54,12 @@ Network key storage is designed to solve the issue of some devices not having a 
 ---
 ## 🏃 Getting Started
 
-Since the project is still early in development, there are no releases yet. Therefore, you must run the code in an IDE.<br>
+### setting up the code
 We recommend the following:
 * JetBrains RustRover for the client-side code
 * JetBrains Rider for the server-side code
 
+### or use one of the releases
 
 ### Setting up Vault
 For testing purposes, we recommend using a locally hosted instance of Vault. Vault is available as a package on most Linux package managers.<br>

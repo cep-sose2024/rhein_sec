@@ -12,7 +12,7 @@ public class VaultCon
     private static string? _token = ReadToken();
 
     public readonly string _defpolicyname = "user";
-    
+
     /*public static async Task Main(string[] args)
     {
 
@@ -25,10 +25,10 @@ public class VaultCon
         Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
     }*/
     public VaultCon()
-    { 
+    {
         CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy);
-
     }
+
     public async Task<string> CreateUserPolicy(string policyName, string policyPermissions)
     {
         var url = $"https://localhost:8200/v1/sys/policies/acl/{policyName}";
@@ -49,7 +49,6 @@ public class VaultCon
 
     public async Task<string> CreateUserToken(string policy)
     {
-        Console.WriteLine(_token);
         var url = "https://localhost:8200/v1/auth/token/create";
 
         var json = new JObject
@@ -75,7 +74,6 @@ public class VaultCon
         var responseJson = JObject.Parse(responseContent);
         var token = responseJson["auth"]["client_token"].ToString();
         return new JObject { ["token"] = token }.ToString();
-
     }
 
     public async Task<int> CreateSecret(string token, JObject newSecret)
@@ -102,12 +100,14 @@ public class VaultCon
 
         var response = await client.GetAsync(url);
         var responseBody = await response.Content.ReadAsStringAsync();
-    
+
         var responseDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseBody);
         object data;
-        if (responseDict.ContainsKey("data"))
+        if (responseDict != null && responseDict.ContainsKey("data"))
         {
-            data = responseDict["data"];
+            var jsonData = JsonConvert.SerializeObject(responseDict["data"]);
+            var jTokenData = JToken.Parse(jsonData);
+            data = new JObject { ["data"] = jTokenData }.ToString();
         }
         else
         {
@@ -115,7 +115,8 @@ public class VaultCon
         }
         return data;
     }
-    
+
+
     public async Task<int> DeleteSecrets(string token)
     {
         var url = "https://localhost:8200/v1/cubbyhole/secrets";
