@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
         directory: ['backend']
 
     runs-on: ${{ matrix.os }}
@@ -40,8 +40,12 @@ jobs:
     - name: Archive production artifacts
       shell: bash
       run: |
-        tar -cvf publish-${{ matrix.os }}.tar ./publish
-        gzip publish-${{ matrix.os }}.tar
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          7z a publish-${{ matrix.os }}.zip ./publish
+        else
+          tar -cvf publish-${{ matrix.os }}.tar ./publish
+          gzip publish-${{ matrix.os }}.tar
+        fi
 
     - name: Get version
       id: get_version
@@ -67,6 +71,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./publish-${{ matrix.os }}.tar.gz
-        asset_name: ${{ matrix.os }}-backend-${{ steps.get_version.outputs.version }}.tar.gz
+        asset_path: ./publish-${{ matrix.os }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+        asset_name: ${{ matrix.os }}-backend-${{ steps.get_version.outputs.version }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
         asset_content_type: application/gzip
