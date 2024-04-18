@@ -21,6 +21,15 @@ public class apidemo : ControllerBase
     [HttpPost("addSecrets/")]
     public async Task<IActionResult> addSecrets([FromBody] SecretModel secretModel)
     {
+        var properties = secretModel.GetType().GetProperties().Select(p => p.Name).ToList();
+        foreach (var property in properties) Console.WriteLine(property);
+        Console.WriteLine(properties.Count != 2);
+        if (!properties.SequenceEqual(new List<string> { "Token", "Data" }))
+            return BadRequest("Invalid request format.");
+
+        if (string.IsNullOrWhiteSpace(secretModel.Token))
+            return BadRequest("Token and Data are required.");
+
         var token = secretModel.Token;
         var jsonData = secretModel.Data;
         var ret = await _vaultCon.CreateSecret(token, jsonData);

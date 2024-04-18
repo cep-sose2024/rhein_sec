@@ -1,7 +1,11 @@
+using Newtonsoft.Json;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(serverOptions => { serverOptions.AddServerHeader = false; });
-builder.Services.AddControllers().AddNewtonsoftJson();
-
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.MissingMemberHandling = MissingMemberHandling.Error;
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
