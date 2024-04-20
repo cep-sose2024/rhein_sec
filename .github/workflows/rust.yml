@@ -1,9 +1,9 @@
-name: .NET
+name: Rust
 
 on:
   push:
     paths:
-      - 'backend/**'
+      - 'client/**'
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -11,46 +11,40 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        directory: ['backend']
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        directory: ['client']
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
       with:
-        dotnet-version: 8.0.x
-
-    - name: Restore dependencies
-      run: dotnet restore ${{ matrix.directory }}
+        toolchain: stable
+        override: true
 
     - name: Build
-      run: dotnet build ${{ matrix.directory }} --no-restore
-
-    - name: Test
-      run: dotnet test ${{ matrix.directory }} --no-build --verbosity normal
-
-    - name: Publish
-      run: dotnet publish ${{ matrix.directory }} --configuration Release --output ./backend_release
+      working-directory: ${{ matrix.directory }}
+      run: cargo build --release
 
     - name: Archive production artifacts
+      working-directory: ${{ matrix.directory }}
       shell: bash
       run: |
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          7z a backend-${{ matrix.os }}.zip ./backend_release
+          7z a client-${{ matrix.os }}.zip ./target/release
         else
-          tar -cvf backend-${{ matrix.os }}.tar ./backend_release
-          gzip backend-${{ matrix.os }}.tar
+          tar -cvf client-${{ matrix.os }}.tar ./target/release
+          gzip client-${{ matrix.os }}.tar
         fi
 
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ matrix.os }}-backend
-        path: ./backend-${{ matrix.os }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
+        name: ${{ matrix.os }}-client
+        path: ${{ matrix.directory }}/client-${{ matrix.os }}.${{ matrix.os == 'windows-latest' && 'zip' || 'tar.gz' }}
 
   release:
     needs: build
@@ -74,7 +68,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
         tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: backend-${{ steps.get_version.outputs.version }}
+        release_name: client-${{ steps.get_version.outputs.version }}
         draft: false
         prerelease: false
 
@@ -84,9 +78,19 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./client-ubuntu-latest/client-ubuntu-latest.tar.gz
+        asset_path: ./ubuntu-latest-client/client-ubuntu-latest.tar.gz
         asset_name: ubuntu-latest-client-${{ steps.get_version.outputs.version }}.tar.gz
         asset_content_type: application/gzip
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.release_token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./windows-latest-client/client-windows-latest.zip
+        asset_name: windows-latest-client-${{ steps.get_version.outputs.version }}.zip
+        asset_content_type: application/zip
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
@@ -94,6 +98,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./windows-latest-backend/backend-windows-latest.zip
-        asset_name: windows-latest-backend-${{ steps.get_version.outputs.version }}.zip
-        asset_content_type: application/zip
+        asset_path: ./macos-latest-client/client-macos-latest.tar.gz
+        asset_name: macos-latest-client-${{ steps.get_version.outputs.version }}.tar.gz
+        asset_content_type: application/gzip
