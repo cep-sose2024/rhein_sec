@@ -5,3 +5,4 @@ client/target
 backend/backend/obj
 backend/backend/bin
 backend/backend/nksconfig.json
+client/token.json

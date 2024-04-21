@@ -67,7 +67,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.release_token }}
       with:
-        tag_name: ${{ steps.get_version.outputs.version }}
+        tag_name: client-${{ steps.get_version.outputs.version }}
         release_name: client-${{ steps.get_version.outputs.version }}
         draft: false
         prerelease: false

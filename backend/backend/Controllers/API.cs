@@ -42,7 +42,6 @@ public class apidemo : ControllerBase
         else
             return BadRequest($"Internal server returned code {ret}");
     }
-
     [HttpPost("getSecrets/")]
     public async Task<IActionResult> getSecrets([FromBody] TokenModel tokenModel)
     {
@@ -56,14 +55,24 @@ public class apidemo : ControllerBase
             {
                 ret = secret;
             }
+            else if (ret is JObject && secret is JObject && JObject.DeepEquals((JObject)ret, (JObject)secret))
+            {
+                continue;
+            }
             else if (!ret.Equals(secret))
             {
                 return StatusCode(500, "Internal server Error");
             }
         }
 
+        if (ret is JObject obj && !obj.HasValues)
+        {
+            return Ok(new {});
+        }
+
         return Ok(ret);
     }
+
 
 
     [HttpDelete("deleteSecrets/")]
