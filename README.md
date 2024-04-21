@@ -84,12 +84,21 @@ vault server -config=VaultConfig
 ```
 After that, go to https://localhost:8200/ui/ and set up the root token and unseal the vault.
 
-Finally, put the root token in a file called `tokens.env` in the **backend/** folder. The file should look like this: 
+Finally, put the root token in a file called `nksconfig.json` in the **backend/** folder. The file should look like this: 
 ``` json
-{
-    "VaultToken": "hvs.your_token_here"
-}
+[
+    {
+      "address": "https://localhost:8200",
+      "token": "hvs.yourRootToken"
+    },
+    {
+      "address": "https://localhost:8202",
+      "token": "hvs.yourRootToken"
+    }
+]
 ```
+This enables the RheinSec NKS solution to have many different instances of Vault hosting the secrets. This would make it very hard for the user’s secrets to get lost.
+
 
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.

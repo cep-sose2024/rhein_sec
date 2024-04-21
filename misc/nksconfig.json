@@ -1,0 +1,12 @@
+[
+    {
+      "address": "https://localhost:8200",
+      "token": "hvs.yourRootToken"
+    },
+    {
+      "address": "https://localhost:8202",
+      "token": "hvs.yourRootToken"
+    }
+  ]
+  
+  

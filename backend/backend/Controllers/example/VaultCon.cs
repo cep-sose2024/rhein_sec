@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -9,9 +10,9 @@ public class VaultCon
 {
     private static readonly HttpClient client = new();
 
-    private static string? _token = ReadToken();
-
     public readonly string _defpolicyname = "user";
+    public List<string> _addresses = new();
+    public List<string> _tokens = new();
 
     /*public static async Task Main(string[] args)
     {
@@ -26,12 +27,16 @@ public class VaultCon
     }*/
     public VaultCon()
     {
-        CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy);
+        ReadConfig();
+        for (var i = 0; i < _tokens.Count; i++)
+            CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy, _addresses[i], _tokens[i]);
     }
 
-    public async Task<string> CreateUserPolicy(string policyName, string policyPermissions)
+
+    public async Task<string> CreateUserPolicy(string policyName, string policyPermissions, string address,
+        string token)
     {
-        var url = $"https://localhost:8200/v1/sys/policies/acl/{policyName}";
+        var url = $"{address}/v1/sys/policies/acl/{policyName}";
         var policy = $"path \"cubbyhole/secrets\" {{ {policyPermissions} }}";
 
         var json = new JObject
@@ -40,19 +45,20 @@ public class VaultCon
         };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", _token);
+        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
         var response = await client.PostAsync(url, content);
 
         return policyName;
     }
 
-    public async Task<string> CreateUserToken(string policy)
+    public async Task<string> CreateUserToken(string policy, string address, string token, string userToken)
     {
-        var url = "https://localhost:8200/v1/auth/token/create";
+        var url = $"{address}/v1/auth/token/create";
 
         var json = new JObject
         {
+            ["id"] = userToken,
             ["display_name"] = "user1_token13",
             ["explicit_max_ttl"] = "0s",
             ["meta"] = new JObject(),
@@ -66,19 +72,19 @@ public class VaultCon
         };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", _token);
+        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
         var response = await client.PostAsync(url, content);
 
         var responseContent = await response.Content.ReadAsStringAsync();
         var responseJson = JObject.Parse(responseContent);
-        var token = responseJson["auth"]["client_token"].ToString();
-        return new JObject { ["token"] = token }.ToString();
+        var user_token = responseJson["auth"]["client_token"].ToString();
+        return new JObject { ["token"] = user_token }.ToString();
     }
 
-    public async Task<int> CreateSecret(string token, JObject newSecret)
+    public async Task<int> CreateSecret(string token, JObject newSecret, string address)
     {
-        var url = "https://localhost:8200/v1/cubbyhole/secrets";
+        var url = $"{address}/v1/cubbyhole/secrets";
 
         var content = new StringContent(newSecret.ToString(), Encoding.UTF8, "application/json");
 
@@ -91,9 +97,9 @@ public class VaultCon
     }
 
 
-    public async Task<object> GetSecrets(string token)
+    public async Task<object> GetSecrets(string token, string address)
     {
-        var url = "https://localhost:8200/v1/cubbyhole/secrets";
+        var url = $"{address}/v1/cubbyhole/secrets";
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -118,9 +124,9 @@ public class VaultCon
     }
 
 
-    public async Task<int> DeleteSecrets(string token)
+    public async Task<int> DeleteSecrets(string token, string address)
     {
-        var url = "https://localhost:8200/v1/cubbyhole/secrets";
+        var url = $"{address}/v1/cubbyhole/secrets";
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -129,12 +135,38 @@ public class VaultCon
         return (int)response.StatusCode;
     }
 
-    public static string? ReadToken()
+    public void ReadConfig()
     {
-        var jsonFilePath = "tokens.env";
+        var jsonFilePath = "nksconfig.json";
         var jsonText = File.ReadAllText(jsonFilePath);
-        var jsonObject = JObject.Parse(jsonText);
-        var vaultToken = (string)jsonObject["VaultToken"]!;
-        return vaultToken;
+        var jsonArray = JArray.Parse(jsonText);
+
+        foreach (var jsonObject in jsonArray)
+        {
+            var address = (string)jsonObject["address"];
+            var token = (string)jsonObject["token"];
+
+            _addresses.Add(address);
+            _tokens.Add(token);
+        }
+    }
+
+
+    public static string GenerateToken(int length)
+    {
+        const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*-_";
+        var res = new StringBuilder();
+        using (var rng = new RNGCryptoServiceProvider())
+        {
+            var uintBuffer = new byte[4];
+            while (length-- > 0)
+            {
+                rng.GetBytes(uintBuffer);
+                var num = BitConverter.ToUInt32(uintBuffer, 0);
+                res.Append(valid[(int)(num % (uint)valid.Length)]);
+            }
+        }
+
+        return res.ToString();
     }
 }
