@@ -57,7 +57,6 @@ public class apidemo : ControllerBase
             }
             else if (ret is JObject && secret is JObject && JObject.DeepEquals((JObject)ret, (JObject)secret))
             {
-                continue;
             }
             else if (!ret.Equals(secret))
             {

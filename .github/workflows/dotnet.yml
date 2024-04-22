@@ -2,8 +2,8 @@ name: .NET
 
 on:
   push:
-      paths:
-      - 'backend/**'
+    paths:
+    - 'backend/**'
     branches: [ "main" ]
   workflow_dispatch:
 
