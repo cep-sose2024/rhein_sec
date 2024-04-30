@@ -12,30 +12,12 @@ use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //crud_test().await?;
-    benchmark().await.expect("error when running benchmark");
+    crud_test().await?;
+    //benchmark().await.expect("error when running benchmark");
     Ok(())
 }
 
 async fn get_token(benchmark: bool) -> Result<String, Box<dyn std::error::Error>> {
-    if !benchmark {
-        match fs::read_to_string("token.json") {
-            Ok(contents) => {
-                let token_data: Value = serde_json::from_str(&contents)?;
-                if let Some(user_token) = token_data.get("usertoken") {
-                    if let Some(user_token_str) = user_token.as_str() {
-                        println!("{}", user_token_str);
-                        return Ok(user_token_str.to_string());
-                    }
-                }
-                println!("The file does not contain a 'usertoken' field");
-            }
-            Err(_) => {
-                println!("Could not read 'token.json'");
-            }
-        }
-    }
-
     let response: Value = reqwest::Client::new()
         .get("http://localhost:5272/apidemo/getToken")
         .header("accept", "*/*")
@@ -67,14 +49,28 @@ async fn get_secrets(token: &str) -> Result<String, Box<dyn std::error::Error>> 
         "token": token
     });
 
-    let response_text = client.post("http://localhost:5272/apidemo/getSecrets")
+    let response: Value = client.post("http://localhost:5272/apidemo/getSecrets")
         .header("accept", "*/*")
         .header("Content-Type", "application/json-patch+json")
         .json(&body)
         .send()
         .await?
-        .text()
+        .json()
         .await?;
+
+    //let response_json = response.json().await?;
+
+    let response_text= response.to_string();
+
+    //save new token
+    if let Some(user_token) = response.get("newToken") {
+        if let Some(user_token_str) = user_token.as_str() {
+            let token_data = json!({
+                "usertoken": user_token_str
+            });
+            fs::write("token.json", token_data.to_string())?;
+        }
+    }
 
     if response_text.is_empty() {
         println!("Received empty response from server");
@@ -87,7 +83,7 @@ async fn get_secrets(token: &str) -> Result<String, Box<dyn std::error::Error>> 
 }
 
 
-async fn add_secrets(token: &str, data: Value) -> Result<()> {
+async fn add_secrets(token: &str, data: Value) -> Result<String, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let body = json!({
         "token": token,
@@ -103,10 +99,20 @@ async fn add_secrets(token: &str, data: Value) -> Result<()> {
         .json()
         .await?;
 
+    //save new token
+    if let Some(user_token) = response.get("newToken") {
+        if let Some(user_token_str) = user_token.as_str() {
+            let token_data = json!({
+                "usertoken": user_token_str
+            });
+            fs::write("token.json", token_data.to_string())?;
+        }
+    }
+
     let pretty_response = serde_json::to_string_pretty(&response).unwrap_or_else(|_| String::from("Error formatting JSON"));
     println!("{}", pretty_response);
 
-    Ok(())
+    Ok((pretty_response))
 }
 async fn delete_secrets(token: &str) -> Result<(), Error> {
     let client = reqwest::Client::new();
@@ -123,16 +129,42 @@ async fn delete_secrets(token: &str) -> Result<(), Error> {
         .json()
         .await?;
 
-    //println!("{:?}", response);
+    //save new token
+    if let Some(user_token) = response.get("newToken") {
+        if let Some(user_token_str) = user_token.as_str() {
+            let token_data = json!({
+                "usertoken": user_token_str
+            });
+            fs::write("token.json", token_data.to_string());
+        }
+    }
+
+    let pretty_response = serde_json::to_string_pretty(&response).unwrap_or_else(|_| String::from("Error formatting JSON"));
+    println!("{}", pretty_response);
 
     Ok(())
+}
+
+fn get_usertoken_from_file() -> Option<String> {
+    let mut file = File::open("token.json").ok()?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).ok()?;
+
+    let json: Value = serde_json::from_str(&contents).ok()?;
+
+    if let Some(usertoken) = json["usertoken"].as_str() {
+        return Some(usertoken.to_string());
+    } else {
+        println!("usertoken not found or invalid format.");
+        return None;
+    }
 }
 
 async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
 
     let mut tokens = Vec::new();
-    for _ in 0..10000 {
+    for _ in 0..100 {
         let token = get_token(true).await?;
         println!("{}",token);
         tokens.push(token);
@@ -160,18 +192,25 @@ async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {
 }
 async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
-
-    let token = get_token(false).await?;
+    println!("Getting a key from Vault:");
+    let mut token = get_token(false).await?;
     let data = json!({
         "key1": "secret1",
         "key2": "secret2",
         "key3": "secret3",
         "key4": "secret4"
     });
+    println!("Storing secrets:");
     add_secrets(&token, data).await?;
+    token = get_usertoken_from_file().unwrap();
+    println!("Retrieving secrets:");
     let mut secret = get_secrets(&token).await?;
     println!("{}", secret);
+    token = get_usertoken_from_file().unwrap();
+    println!("Deleting secrets:");
     delete_secrets(&token).await?;
+    token = get_usertoken_from_file().unwrap();
+    println!("Retrieving secrets again:");
     secret = get_secrets(&token).await?;
     println!("{}",secret);
     let duration = start.elapsed();

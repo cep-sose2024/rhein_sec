@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -92,7 +93,7 @@ public class VaultCon
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
         var response = await client.PostAsync(url, content);
-
+        
         return (int)response.StatusCode;
     }
 
@@ -168,5 +169,69 @@ public class VaultCon
         }
 
         return res.ToString();
+    }
+    
+    public async Task<int> DeleteToken(string xvToken, string address, string tokenToDelete)
+    {
+        var url = $"{address}/v1/auth/token/revoke";
+
+        client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        client.DefaultRequestHeaders.Add("X-Vault-Token", xvToken);
+
+        var requestBody = $"{{\"token\": \"{tokenToDelete}\"}}";
+
+        var response = await client.PostAsync(url, new StringContent(requestBody));
+
+        return (int)response.StatusCode;
+    }
+    
+    public async Task<bool> TokenExists(string xvToken, string userToken, string address)
+    {
+        var url = $"{address}/v1/auth/token/lookup";
+
+        client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        client.DefaultRequestHeaders.Add("X-Vault-Token", xvToken);
+        
+        var requestBody = $"{{\"token\": \"{userToken}\"}}";
+        
+        var response = await client.PostAsync(url, new StringContent(requestBody));
+        var responseBody = await response.Content.ReadAsStringAsync();
+        bool tokenExists;
+        if (responseBody.Contains("errors") && responseBody.Contains("bad token"))
+        {
+            tokenExists = false;
+        }
+        else
+        {
+            tokenExists = true;
+        }
+        return tokenExists;
+    } 
+    
+    public async Task<string> RotateUserToken(string policy, string address, string token, string userToken, string newToken)
+    {
+        //store secret in variable
+        var secretsObject = await GetSecrets(userToken, address);
+        var secretsString = secretsObject.ToString();
+        var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(secretsString);
+        JObject secrets;
+        if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))
+        {
+            var jsonData = JsonConvert.SerializeObject(secretsDeserialized["data"]);
+            secrets = JObject.Parse(jsonData);
+        }
+        else
+        {
+            secrets = new JObject();
+        }
+        
+        //create new token
+        await CreateUserToken(policy, address, token, newToken);
+        //store secret from variable with new token
+        await CreateSecret(newToken, secrets, address);
+        //delete old secret in old token
+        await DeleteToken(token, address, userToken);
+        //return new token
+        return newToken;
     }
 }
