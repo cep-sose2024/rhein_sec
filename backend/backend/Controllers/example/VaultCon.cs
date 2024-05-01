@@ -93,7 +93,7 @@ public class VaultCon
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
         var response = await client.PostAsync(url, content);
-        
+
         return (int)response.StatusCode;
     }
 
@@ -120,7 +120,7 @@ public class VaultCon
         {
             data = new JObject();
         }
-        
+
         return data;
     }
 
@@ -170,7 +170,7 @@ public class VaultCon
 
         return res.ToString();
     }
-    
+
     public async Task<int> DeleteToken(string xvToken, string address, string tokenToDelete)
     {
         var url = $"{address}/v1/auth/token/revoke";
@@ -184,31 +184,38 @@ public class VaultCon
 
         return (int)response.StatusCode;
     }
-    
-    public async Task<bool> TokenExists(string xvToken, string userToken, string address)
+
+    public async Task<bool> TokenExists(string rootToken, string userToken, string address)
     {
         var url = $"{address}/v1/auth/token/lookup";
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", xvToken);
-        
+        client.DefaultRequestHeaders.Add("X-Vault-Token", rootToken);
+
         var requestBody = $"{{\"token\": \"{userToken}\"}}";
-        
+
         var response = await client.PostAsync(url, new StringContent(requestBody));
         var responseBody = await response.Content.ReadAsStringAsync();
         bool tokenExists;
         if (responseBody.Contains("errors") && responseBody.Contains("bad token"))
-        {
             tokenExists = false;
-        }
         else
-        {
             tokenExists = true;
-        }
         return tokenExists;
-    } 
-    
-    public async Task<string> RotateUserToken(string policy, string address, string token, string userToken, string newToken)
+    }
+
+    public async Task<bool> checkToken(string userToken)
+    {
+        for (var i = 0; i < _addresses.Count(); i++)
+            if (!await TokenExists(_tokens[i], userToken, _addresses[i]))
+                return false;
+
+        return true;
+    }
+
+
+    public async Task<string> RotateUserToken(string policy, string address, string token, string userToken,
+        string newToken)
     {
         //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
@@ -224,7 +231,7 @@ public class VaultCon
         {
             secrets = new JObject();
         }
-        
+
         //create new token
         await CreateUserToken(policy, address, token, newToken);
         //store secret from variable with new token

@@ -16,9 +16,17 @@ public class apidemo : ControllerBase
     {
         var token = "";
         var user_token = VaultCon.GenerateToken(80);
+        var tokenExists = true;
+        while (tokenExists)
+        {
+            if (tokenExists) user_token = VaultCon.GenerateToken(80);
+            tokenExists = await _vaultCon.checkToken(user_token);
+        }
+
         for (var i = 0; i < _vaultCon._tokens.Count; i++)
             token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
                 _vaultCon._tokens[i], user_token);
+
         return Ok(token);
     }
 
@@ -35,34 +43,37 @@ public class apidemo : ControllerBase
         var oldToken = secretModel.Token;
         var newToken = "";
         var jsonData = secretModel.Data;
-        bool tokenExists = await _vaultCon.TokenExists(_vaultCon._tokens[0], oldToken, _vaultCon._addresses[0]);
+        var tokenExists = await _vaultCon.checkToken(oldToken);
         var ret = 0;
         if (tokenExists)
         {
             newToken = await rotateToken(oldToken);
             for (var i = 0; i < _vaultCon._addresses.Count; i++)
                 ret = await _vaultCon.CreateSecret(newToken, jsonData, _vaultCon._addresses[i]);
+
+            var returnObject = new
+            {
+                returnCode = ret,
+                newToken
+            };
+
+            if (ret > 199 && ret < 300)
+                return Ok(returnObject);
+            else
+                return BadRequest(returnObject);
         }
-        
-        var returnObject = new
-        {
-            tokenExists = tokenExists,
-            returnCode = ret,
-            newToken = newToken
-        };
-        
-        if (ret > 199 && ret < 300)
-            return Ok(returnObject);
         else
-            return BadRequest(returnObject);
+        {
+            return BadRequest("Unknown User Token");
+        }
     }
-    
+
     [HttpPost("getSecrets/")]
     public async Task<IActionResult> getSecrets([FromBody] TokenModel tokenModel)
     {
         var oldToken = tokenModel.Token;
         var newToken = "";
-        bool tokenExists = await _vaultCon.TokenExists(_vaultCon._tokens[0], oldToken, _vaultCon._addresses[0]);
+        var tokenExists = await _vaultCon.checkToken(oldToken);
         object ret = null;
         if (tokenExists)
         {
@@ -74,7 +85,7 @@ public class apidemo : ControllerBase
                 {
                     ret = secret;
                 }
-                else if (ret is JObject && secret is JObject && JObject.DeepEquals((JObject)ret, (JObject)secret))
+                else if (ret is JObject && secret is JObject && JToken.DeepEquals((JObject)ret, (JObject)secret))
                 {
                 }
                 else if (!ret.Equals(secret))
@@ -82,51 +93,53 @@ public class apidemo : ControllerBase
                     return StatusCode(500, "Internal server Error");
                 }
             }
-        }
-        if ((ret is JObject obj && !obj.HasValues) || ret is null)
-        {
-            ret = new {};
+
+            var retJObject = JObject.Parse(ret.ToString());
+            var returnObject = new
+            {
+                data = retJObject.GetValue("data"),
+                newToken
+            };
+            return Ok(returnObject);
         }
 
-        var retJObject = JObject.Parse(ret.ToString());
-        var returnObject = new
-        {
-            tokenExists = tokenExists,
-            data = retJObject.GetValue("data"),
-            newToken = newToken
-        };
-        return Ok(returnObject);
+        return BadRequest("Unknown User Token");
     }
-    
-    private async Task<string> rotateToken(string userToken)
-    {
-        var newToken = VaultCon.GenerateToken(80);
-        for (var i = 0; i < _vaultCon._addresses.Count; i++)
-            newToken = await _vaultCon.RotateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i], _vaultCon._tokens[i], userToken, newToken);
 
-        return newToken;
-    }
-    
+
     [HttpDelete("deleteSecrets/")]
     public async Task<IActionResult> deleteSecrets([FromBody] TokenModel tokenModel)
     {
         var oldToken = tokenModel.Token;
         var newToken = "";
-        bool tokenExists = await _vaultCon.TokenExists(_vaultCon._tokens[0], oldToken, _vaultCon._addresses[0]);
+        var tokenExists = await _vaultCon.checkToken(oldToken);
         var ret = 0;
         if (tokenExists)
         {
             newToken = await rotateToken(oldToken);
             for (var i = 0; i < _vaultCon._addresses.Count; i++)
                 ret = await _vaultCon.DeleteSecrets(newToken, _vaultCon._addresses[i]);
+            var returnObject = new
+            {
+                tokenExists,
+
+                returnCode = ret,
+                newToken
+            };
+            return Ok(returnObject);
         }
-        var returnObject = new
-        {
-            tokenExists = tokenExists,
-            returnCode = ret,
-            newToken = newToken
-        };
-        return Ok(returnObject);
+
+        return BadRequest("Unknown User Token");
+    }
+
+    private async Task<string> rotateToken(string userToken)
+    {
+        var newToken = VaultCon.GenerateToken(80);
+        for (var i = 0; i < _vaultCon._addresses.Count; i++)
+            newToken = await _vaultCon.RotateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
+                _vaultCon._tokens[i], userToken, newToken);
+
+        return newToken;
     }
 
     public class TokenModel
