@@ -195,10 +195,25 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     println!("Getting a key from Vault:");
     let mut token = get_token(false).await?;
     let data = json!({
-        "key1": "secret1",
-        "key2": "secret2",
-        "key3": "secret3",
-        "key4": "secret4"
+        "data": {
+            "keys": [
+                {
+                    "id": "key1",
+                    "type": "RSA",
+                    "publicKey": "---BEGIN PUB KEY---...",
+                    "privateKey": "---BEGIN RSA PRIVATE KEY---...",
+                    "length": 2048
+                },
+                {
+                    "id": "key2",
+                    "type": "ecc",
+                    "publicKey": "...",
+                    "privateKey": "...",
+                    "curve": "Curve25519",
+                    "hashingAlg": "SHA384"
+                }
+            ]
+        }
     });
     println!("Storing secrets:");
     add_secrets(&token, data).await?;

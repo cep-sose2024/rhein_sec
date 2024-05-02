@@ -131,6 +131,47 @@ public class apidemo : ControllerBase
 
         return BadRequest("Unknown User Token");
     }
+    
+    
+    [HttpPost("generateAndSaveKeyPair/")]//TODO
+    public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] TokenModel tokenModel)
+    {
+        var oldToken = tokenModel.Token;
+        var newToken = "";
+        var tokenExists = await _vaultCon.checkToken(oldToken);
+        object ret = null;
+        if (tokenExists)
+        {
+            newToken = await rotateToken(oldToken);
+            for (var i = 0; i < _vaultCon._addresses.Count; i++)
+            {
+                var secret = await _vaultCon.GetSecrets(newToken, _vaultCon._addresses[i]);
+                if (ret == null)
+                {
+                    ret = secret;
+                }
+                else if (ret is JObject && secret is JObject && JToken.DeepEquals((JObject)ret, (JObject)secret))
+                {
+                }
+                else if (!ret.Equals(secret))
+                {
+                    return StatusCode(500, "Internal server Error");
+                }
+            }
+            
+
+            var retJObject = JObject.Parse(ret.ToString());
+            var returnObject = new
+            {
+                data = retJObject.GetValue("data"),
+                newToken
+            };
+            return Ok(returnObject);
+        }
+
+        return BadRequest("Unknown User Token");
+    }
+    
 
     private async Task<string> rotateToken(string userToken)
     {
