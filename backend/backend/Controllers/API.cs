@@ -133,10 +133,10 @@ public class apidemo : ControllerBase
     }
     
     
-    [HttpPost("generateAndSaveKeyPair/")]//TODO
-    public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] TokenModel tokenModel)
+    [HttpPost("generateAndSaveKeyPair/")]
+    public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] KeyPairModel keyPairModel)
     {
-        var oldToken = tokenModel.Token;
+        var oldToken = keyPairModel.Token;
         var newToken = "";
         var tokenExists = await _vaultCon.checkToken(oldToken);
         object ret = null;
@@ -158,15 +158,24 @@ public class apidemo : ControllerBase
                     return StatusCode(500, "Internal server Error");
                 }
             }
-            
 
+            var keyPair = new JObject();
+            if (keyPairModel.Type.ToLower().Equals("ecc"))
+            {
+                keyPair = Crypto.GetxX25519KeyPair(keyPairModel.Name);
+            }
+            else if (keyPairModel.Type.ToLower().Equals("rsa"))
+            {
+                keyPair = Crypto.GetRsaKeyPair(keyPairModel.Name);
+            }
+            Console.WriteLine(keyPair);
             var retJObject = JObject.Parse(ret.ToString());
             var returnObject = new
             {
                 data = retJObject.GetValue("data"),
                 newToken
             };
-            return Ok(returnObject);
+            return Ok(keyPair);
         }
 
         return BadRequest("Unknown User Token");
@@ -186,6 +195,12 @@ public class apidemo : ControllerBase
     public class TokenModel
     {
         public string Token { get; set; }
+    }
+    public class KeyPairModel
+    {
+        public string Token { get; set; }
+        public string Name { get; set; }
+        public string Type { get; set; }
     }
 
     public class SecretModel
