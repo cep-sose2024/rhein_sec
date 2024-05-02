@@ -48,9 +48,7 @@ public class apidemo : ControllerBase
         if (tokenExists)
         {
             newToken = await rotateToken(oldToken);
-            for (var i = 0; i < _vaultCon._addresses.Count; i++)
-                ret = await _vaultCon.CreateSecret(newToken, jsonData, _vaultCon._addresses[i]);
-
+            ret = await putSecret(newToken, jsonData);
             var returnObject = new
             {
                 returnCode = ret,
@@ -168,17 +166,34 @@ public class apidemo : ControllerBase
             {
                 keyPair = Crypto.GetRsaKeyPair(keyPairModel.Name);
             }
-            Console.WriteLine(keyPair);
             var retJObject = JObject.Parse(ret.ToString());
+            //TODO: what if no data exists yet?
+            retJObject["data"]["keys"].Last.AddAfterSelf(keyPair);
+            var putRetCode = putSecret(newToken, retJObject);
             var returnObject = new
             {
                 data = retJObject.GetValue("data"),
                 newToken
             };
-            return Ok(keyPair);
+            
+            
+            return Ok(returnObject);
         }
 
         return BadRequest("Unknown User Token");
+    }
+    
+    private async Task<int> putSecret(string token, JObject data)
+    {
+        var tokenExists = await _vaultCon.checkToken(token);
+        var ret = 0;
+        if (tokenExists)
+        {
+            for (var i = 0; i < _vaultCon._addresses.Count; i++)
+                ret = await _vaultCon.CreateSecret(token, data, _vaultCon._addresses[i]);
+        }
+
+        return ret;
     }
     
 
