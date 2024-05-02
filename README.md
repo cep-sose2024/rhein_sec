@@ -54,6 +54,13 @@ Network key storage is designed to solve the issue of some devices not having a 
 ---
 ## 🏃 Getting Started
 
+### installation Script 
+We provide a Linux installation script available in misc/install.sh. Make sure to make the script executable before executing it using the following command:
+``` bash
+chmod +x install.sh
+```
+
+
 ### setting up the code
 We recommend the following:
 * JetBrains RustRover for the client-side code
