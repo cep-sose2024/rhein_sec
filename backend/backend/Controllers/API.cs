@@ -167,9 +167,20 @@ public class apidemo : ControllerBase
                 keyPair = Crypto.GetRsaKeyPair(keyPairModel.Name);
             }
             var retJObject = JObject.Parse(ret.ToString());
-            //TODO: what if no data exists yet?
-            retJObject["data"]["keys"].Last.AddAfterSelf(keyPair);
-            var putRetCode = putSecret(newToken, retJObject);
+            if (secretHasKeys(retJObject))
+            {
+                retJObject["data"]["keys"].Last.AddAfterSelf(keyPair);
+            }
+            else
+            {
+                JObject data = new JObject();
+                data.Add("keys",new JArray
+                {
+                    keyPair
+                });
+                retJObject.Add("data", data);
+            }
+            var putRetCode = putSecret(newToken, retJObject["data"] as JObject);
             var returnObject = new
             {
                 data = retJObject.GetValue("data"),
@@ -195,7 +206,21 @@ public class apidemo : ControllerBase
 
         return ret;
     }
-    
+
+    private bool secretHasKeys(JObject secret)
+    {
+        bool containsDataField = secret.ContainsKey("data");
+        if (containsDataField)
+        {
+            JObject dataObject = secret["data"] as JObject;
+            bool containsKeysField = dataObject?.ContainsKey("keys") ?? false;
+            if (containsKeysField)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private async Task<string> rotateToken(string userToken)
     {
