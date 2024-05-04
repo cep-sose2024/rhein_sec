@@ -8,15 +8,61 @@ distro=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 
 # Install Vault
 echo "Installing Vault..."
-if [[ "$distro" == *"Ubuntu"* ]] || [[ "$distro" == *"Debian"* ]]; then
-    sudo apt-get install -y vault
-elif [[ "$distro" == *"Fedora"* ]]; then
-    sudo dnf install -y vault
-elif [[ "$distro" == *"Arch Linux"* ]]; then
-    sudo pacman -S vault
-else
-    echo "Unsupported Linux distribution. Please install Vault manually. and try again! "
+if ! command -v curl &> /dev/null; then
+    echo "curl could not be found"
+    echo "Installing curl..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y curl
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y curl
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -S curl
+    else
+        echo "Unsupported package manager. Please install curl manually and try again!"
+        exit 1
+    fi
 fi
+
+if ! command -v dotnet &> /dev/null; then
+    echo ".NET runtime could not be found"
+    echo "Installing .NET runtime..."
+    if command -v apt-get &> /dev/null; then
+               sudo apt-get install dotnet8
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y dotnet-sdk-8.0
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -S dotnet-sdk-8.0
+    else
+        echo "Unsupported package manager. Please install .NET runtime manually and try again!"
+        exit 1
+    fi
+fi
+
+if ! command -v vault &> /dev/null; then
+    echo "Vault could not be found"
+    echo "Installing Vault..."
+    if command -v apt-get &> /dev/null; then
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+        echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update && sudo apt-get install -y vault
+        if [ $? -ne 0 ]; then
+            echo "Failed to install Vault from HashiCorp's repository. Trying manual installation..."
+            VAULT_VERSION="1.16.2"
+            wget https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip
+            unzip vault_${VAULT_VERSION}_linux_amd64.zip
+            sudo mv vault /usr/local/bin/
+        fi
+    elif command -v dnf &> /dev/null; then
+        sudo dnf install -y vault
+    elif command -v pacman &> /dev/null; then
+        sudo pacman -S vault
+    else
+        echo "Unsupported package manager. Please install Vault manually and try again!"
+    fi
+else
+    echo "Vault is already installed"
+fi
+
 
 # Create a folder called 'vault'
 echo "Creating 'vault' directory..."
@@ -62,15 +108,19 @@ openssl req -new -x509 -key vault/certs/key.pem -out vault/certs/cert.pem -days 
 -addext "subjectAltName = DNS:localhost, IP:127.0.0.1"
 
 echo -e "${RED}Trusting the certificate...${NO_COLOR}"
+
+cert_name=$(sha256sum vault/certs/cert.pem | awk '{print $1}')
+
 if [ -d "/usr/local/share/ca-certificates/" ]; then
-    sudo cp vault/certs/cert.pem /usr/local/share/ca-certificates/ # Copy the certificate to trusted CA directory
+    sudo cp vault/certs/cert.pem /usr/local/share/ca-certificates/$cert_name.crt # Copy the certificate to trusted CA directory
     sudo update-ca-certificates # Update the CA certificate bundle
 elif [ -d "/etc/ca-certificates/trust-source/anchors/" ]; then
-    sudo cp vault/certs/cert.pem /etc/ca-certificates/trust-source/anchors/ # Copy the certificate to trusted CA directory
+    sudo cp vault/certs/cert.pem /etc/ca-certificates/trust-source/anchors/$cert_name.pem # Copy the certificate to trusted CA directory
     sudo trust extract-compat # Update the CA certificate bundle
 else
     echo -e "${RED}Unable to find the directory to store trusted CA certificates. Please check your distribution's documentation.${NO_COLOR}"
 fi
+
 
 
 # Start the Vault server
@@ -96,8 +146,8 @@ echo "Creating 'unsealVault.sh'..."
 cat << EOF > unsealVault.sh # Create a new script named 'unsealVault.sh' that unseals the Vault
 #!/bin/bash
 
-# Get the port number from the script arguments, default to 8200 if not provided
-PORT=\${1:-8200}
+# Get the port number from the script arguments, default to $PORT if not provided
+PORT=\${1:-$PORT}
 
 # Export Vault address
 export VAULT_ADDR="https://localhost:\$PORT"
