@@ -19,7 +19,7 @@ public class Crypto
 
         return (privateKey, publicKey);
     }
-    
+
     private static (string, string) GenerateRsaKeyPair(int keySize = 2048)
     {
         var generator = new RsaKeyPairGenerator();
@@ -47,9 +47,10 @@ public class Crypto
         return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize.ToString());
     }
 
-    private static JObject MakeKeyJson(string name, string alg, string curve, string publicKey, string privateKey, string length)
+    private static JObject MakeKeyJson(string name, string alg, string curve, string publicKey, string privateKey,
+        string length)
     {
-        JObject keyJson = new JObject();
+        var keyJson = new JObject();
 
         keyJson["id"] = name;
         keyJson["type"] = alg;
@@ -57,10 +58,7 @@ public class Crypto
         keyJson["privateKey"] = privateKey;
         keyJson["length"] = length;
 
-        if (alg.ToLower() == "ecc")
-        {
-            keyJson["curve"] = curve;
-        }
+        if (alg.ToLower() == "ecc") keyJson["curve"] = curve;
 
         return keyJson;
     }
