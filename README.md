@@ -46,13 +46,27 @@ Network key storage is designed to solve the issue of some devices not having a 
 ## 👷‍♂️ Built With
 
 * ASP .NET core 8.0.
-* Hashicorp Vault 1.16.1.
+* Hashicorp Vault 1.16.2.
 * Rust for the Client side of the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 ## 🏃 Getting Started
+
+### Installation Script
+
+We provide a Linux installation script available at `misc/install.sh`. Ensure that you make the script executable before running it with the following command:
+
+```bash
+chmod +x install.sh
+```
+Then, execute it using:
+``` bash 
+./install.sh <your_desiered_vault_port>
+```
+This script automatically installs all the required packages and launches the backend server, Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
+
 
 ### setting up the code
 We recommend the following:

@@ -2,7 +2,7 @@ use std::fs;
 use std::time::Instant;
 use anyhow::Result;
 use reqwest::Error as ReqwestError;
-use serde_json::{ Value};
+use serde_json::{Value};
 use serde_json::json;
 use reqwest::Error;
 
@@ -60,7 +60,7 @@ async fn get_secrets(token: &str) -> Result<String, Box<dyn std::error::Error>> 
 
     //let response_json = response.json().await?;
 
-    let response_text= response.to_string();
+    let response_text = response.to_string();
 
     //save new token
     if let Some(user_token) = response.get("newToken") {
@@ -114,6 +114,7 @@ async fn add_secrets(token: &str, data: Value) -> Result<String, Box<dyn std::er
 
     Ok((pretty_response))
 }
+
 async fn delete_secrets(token: &str) -> Result<(), Error> {
     let client = reqwest::Client::new();
     let body = json!({
@@ -166,7 +167,7 @@ async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {
     let mut tokens = Vec::new();
     for _ in 0..100 {
         let token = get_token(true).await?;
-        println!("{}",token);
+        println!("{}", token);
         tokens.push(token);
     }
     let mut file = File::create("tokens.txt")?;
@@ -190,16 +191,33 @@ async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
 async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     let start = Instant::now();
     println!("Getting a key from Vault:");
     let mut token = get_token(false).await?;
+    let keys = json!([
+    {
+        "Id": "key1",
+        "Type": "RSA",
+        "PublicKey": "---BEGIN PUB KEY---...",
+        "PrivateKey": "---BEGIN RSA PRIVATE KEY---...",
+        "Curve": "null",
+        "Length": 2048
+    },
+    {
+        "Id": "key2",
+        "Type": "ecc",
+        "PublicKey": "...",
+        "PrivateKey": "...",
+        "Curve": "Curve25519",
+    }
+]);
+
     let data = json!({
-        "key1": "secret1",
-        "key2": "secret2",
-        "key3": "secret3",
-        "key4": "secret4"
-    });
+    "Keys": keys,
+    "Signatures": [] 
+});
     println!("Storing secrets:");
     add_secrets(&token, data).await?;
     token = get_usertoken_from_file().unwrap();
@@ -212,7 +230,7 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     token = get_usertoken_from_file().unwrap();
     println!("Retrieving secrets again:");
     secret = get_secrets(&token).await?;
-    println!("{}",secret);
+    println!("{}", secret);
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
 

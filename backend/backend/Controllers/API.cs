@@ -26,6 +26,13 @@ public class apidemo : ControllerBase
         for (var i = 0; i < _vaultCon._tokens.Count; i++)
             token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
                 _vaultCon._tokens[i], user_token);
+        
+        var dataToSave = new JObject
+        {
+            ["keys"] = new JArray(),
+            ["signatures"] = new JArray()
+        };
+        await putSecret(user_token, dataToSave);
 
         return Ok(token);
     }
@@ -48,9 +55,7 @@ public class apidemo : ControllerBase
         if (tokenExists)
         {
             newToken = await rotateToken(oldToken);
-            for (var i = 0; i < _vaultCon._addresses.Count; i++)
-                ret = await _vaultCon.CreateSecret(newToken, jsonData, _vaultCon._addresses[i]);
-
+            ret = await putSecret(newToken, jsonData.ToJObject());
             var returnObject = new
             {
                 returnCode = ret,
@@ -132,6 +137,101 @@ public class apidemo : ControllerBase
         return BadRequest("Unknown User Token");
     }
 
+
+    [HttpPost("generateAndSaveKeyPair/")]
+    public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] KeyPairModel keyPairModel)
+    {
+        var oldToken = keyPairModel.Token;
+        var newToken = "";
+        var tokenExists = await _vaultCon.checkToken(oldToken);
+        object ret = null;
+        if (tokenExists)
+        {
+            newToken = await rotateToken(oldToken);
+            for (var i = 0; i < _vaultCon._addresses.Count; i++)
+            {
+                var secret = await _vaultCon.GetSecrets(newToken, _vaultCon._addresses[i]);
+                if (ret == null)
+                {
+                    ret = secret;
+                }
+                else if (ret is JObject && secret is JObject && JToken.DeepEquals((JObject)ret, (JObject)secret))
+                {
+                }
+                else if (!ret.Equals(secret))
+                {
+                    return StatusCode(500, "Internal server Error");
+                }
+            }
+
+            var retJObject = JObject.Parse(ret.ToString());
+            var keysArray = (JArray)retJObject["data"]["keys"];
+            var existingKey = keysArray.FirstOrDefault(obj => obj["id"].Value<string>() == keyPairModel.Name);
+
+            if (existingKey != null)
+            {
+                var errorResponse = new
+                {
+                    message = $"Key with ID {keyPairModel.Name} already exists.",
+                    newToken
+                };
+                return BadRequest(errorResponse);
+            }
+
+            var keyPair = new JObject();
+            if (keyPairModel.Type.ToLower().Equals("ecc"))
+                keyPair = Crypto.GetxX25519KeyPair(keyPairModel.Name);
+            else if (keyPairModel.Type.ToLower().Equals("rsa")) keyPair = Crypto.GetRsaKeyPair(keyPairModel.Name);
+
+            if (secretHasKeys(retJObject))
+            {
+                keysArray.Add(keyPair);
+            }
+            else
+            {
+                var data = new JObject();
+                data.Add("keys", new JArray { keyPair });
+                retJObject.Add("data", data);
+            }
+
+            var putRetCode = putSecret(newToken, retJObject["data"] as JObject);
+            var returnObject = new
+            {
+                data = retJObject.GetValue("data"),
+                newToken
+            };
+
+            return Ok(returnObject);
+        }
+
+        return BadRequest("Unknown User Token");
+    }
+
+
+    private async Task<int> putSecret(string token, JObject data)
+    {
+        var tokenExists = await _vaultCon.checkToken(token);
+        var ret = 0;
+        if (tokenExists)
+            for (var i = 0; i < _vaultCon._addresses.Count; i++)
+                ret = await _vaultCon.CreateSecret(token, data, _vaultCon._addresses[i]);
+
+        return ret;
+    }
+
+    private bool secretHasKeys(JObject secret)
+    {
+        var containsDataField = secret.ContainsKey("data");
+        if (containsDataField)
+        {
+            var dataObject = secret["data"] as JObject;
+            var containsKeysField = dataObject?.ContainsKey("keys") ?? false;
+            if (containsKeysField) return true;
+        }
+
+        return false;
+    }
+
     private async Task<string> rotateToken(string userToken)
     {
         var newToken = VaultCon.GenerateToken(80);
@@ -140,16 +240,5 @@ public class apidemo : ControllerBase
                 _vaultCon._tokens[i], userToken, newToken);
 
         return newToken;
-    }
-
-    public class TokenModel
-    {
-        public string Token { get; set; }
-    }
-
-    public class SecretModel
-    {
-        public string Token { get; set; }
-        public JObject Data { get; set; }
     }
 }

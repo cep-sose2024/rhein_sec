@@ -16,7 +16,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment() || args.Contains("--UseSwagger"))
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1"); });
+    app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "NKS_BACKEND V0.1"); });
 
     var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
     lifetime.ApplicationStarted.Register(() =>
