@@ -57,7 +57,8 @@ public class Crypto
         keyJson["publicKey"] = publicKey;
         keyJson["privateKey"] = privateKey;
         keyJson["length"] = length;
-
+        keyJson["curve"] = null;
+        
         if (alg.ToLower() == "ecc") keyJson["curve"] = curve;
 
         return keyJson;
