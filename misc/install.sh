@@ -88,7 +88,7 @@ listener "tcp" {
   address     = "0.0.0.0:$PORT"
   tls_disable = "false"
   tls_skip_verify = "true"
-  tls_cert_file = "$(pwd)/vault/certs/cert.crt"
+  tls_cert_file = "$(pwd)/vault/certs/cert.pem"
   tls_key_file = "$(pwd)/vault/certs/key.pem"
 }
 
@@ -103,19 +103,19 @@ NO_COLOR='\033[0m'
 
 echo -e "$Creating certificates..."
 openssl genpkey -algorithm RSA -out vault/certs/key.pem -pkeyopt rsa_keygen_bits:2048 # Generate a private key
-openssl req -new -x509 -key vault/certs/key.pem -out vault/certs/cert.crt -days 365 \
+openssl req -new -x509 -key vault/certs/key.pem -out vault/certs/cert.pem -days 365 \
 -subj "/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=localhost" \
 -addext "subjectAltName = DNS:localhost, IP:127.0.0.1"
 
 echo -e "${RED}Trusting the certificate...${NO_COLOR}"
 
-cert_name=$(sha256sum vault/certs/cert.crt | awk '{print $1}')
+cert_name=$(sha256sum vault/certs/cert.pem | awk '{print $1}')
 
 if [ -d "/usr/local/share/ca-certificates/" ]; then
-    sudo cp vault/certs/cert.crt /usr/local/share/ca-certificates/$cert_name.crt # Copy the certificate to trusted CA directory
+    sudo cp vault/certs/cert.pem /usr/local/share/ca-certificates/$cert_name.crt # Copy the certificate to trusted CA directory
     sudo update-ca-certificates # Update the CA certificate bundle
 elif [ -d "/etc/ca-certificates/trust-source/anchors/" ]; then
-    sudo cp vault/certs/cert.crt /etc/ca-certificates/trust-source/anchors/$cert_name.crt # Copy the certificate to trusted CA directory
+    sudo cp vault/certs/cert.pem /etc/ca-certificates/trust-source/anchors/$cert_name.pem # Copy the certificate to trusted CA directory
     sudo trust extract-compat # Update the CA certificate bundle
 else
     echo -e "${RED}Unable to find the directory to store trusted CA certificates. Please check your distribution's documentation.${NO_COLOR}"
