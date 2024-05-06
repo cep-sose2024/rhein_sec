@@ -12,8 +12,14 @@ use ed25519_dalek::{Verifier, SigningKey, VerifyingKey, Signature, Signer};
 
 
 fn main() {
-    let public_key_base64 = "afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY=";// example public key
-    let private_key_base64 = "6BCIEufBjTrfeprQi3a3jA3khSPm6NzeAidXWlVYYkA="; // example priv key
+
+    let x25519_keys = decode_base64("afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY=", "6BCIEufBjTrfeprQi3a3jA3khSPm6NzeAidXWlVYYkA=");
+    let message = b"hello world.";
+    }
+
+fn decode_base64(_public_key_base64: &str, _private_key_base64: &str ) -> (PublicKey, StaticSecret) {
+    let public_key_base64 = _public_key_base64;// example public key
+    let private_key_base64 = _private_key_base64; // example private key
 
     let public_key_bytes = BASE64_STANDARD.decode(public_key_base64.as_bytes()).expect("Invalid public key base64");
     let private_key_bytes = BASE64_STANDARD.decode(private_key_base64.as_bytes()).expect("Invalid private key base64");
@@ -21,29 +27,18 @@ fn main() {
     let x25519_public_key = X25519PublicKey::from(*array_ref![public_key_bytes, 0, 32]);
     let x25519_private_key = X25519StaticSecret::from(*array_ref![private_key_bytes, 0, 32]);
 
-
-    let message = b"hello world.";
-    let (encrypted_message, ephemeral_public, nonce) = encrypt(message, &x25519_public_key).expect("Encryption failed");
-
-    match decrypt(&encrypted_message, &ephemeral_public, &x25519_private_key, &nonce) {
-        Ok(decrypted_message) => {
-            println!("Encrypted message: {:?}", encrypted_message);
-            println!("Decrypted message: {:?}", String::from_utf8(decrypted_message).expect("Invalid UTF-8"));
-        }
-        Err(_) => {
-            println!("Failed to decrypt the message");
-        }
-    }
+    return(x25519_public_key, x25519_private_key);
+}
 
 
-    //SIGNING
+fn sign(x25519_private_key: StaticSecret, _message: &[u8]) -> Signature {
     let ed25519_secret_key = SigningKey::from_bytes(&x25519_private_key.to_bytes());
     let ed25519_public_key = VerifyingKey::from(&ed25519_secret_key);
 
-    let message_to_sign = b"Hello, world!";
-    let signature: Signature = ed25519_secret_key.sign(message_to_sign);
+    let signature: Signature = ed25519_secret_key.sign(_message);
 
-    assert!(ed25519_public_key.verify(message_to_sign, &signature).is_ok());
+    assert!(ed25519_public_key.verify(_message, &signature).is_ok());
+    return signature;
 }
 
 fn encrypt(message: &[u8], public_key: &PublicKey) -> Result<(Vec<u8>, PublicKey, Nonce), ()> {
