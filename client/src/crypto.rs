@@ -50,18 +50,18 @@ pub fn encrypt(message: &[u8], public_key: PublicKey) -> Result<(Vec<u8>, Public
 
     let random_bytes = rand::random::<[u8; 12]>();
     let nonce = Nonce::from_slice(&random_bytes);
-    println!("{:?}",nonce);
+    //println!("{:?}",nonce);
     cipher.encrypt(&nonce, message)
         .map(|encrypted_message| (encrypted_message, ephemeral_public, *nonce))
         .map_err(|_| ())
 }
 
-pub fn decrypt(encrypted_message: &[u8], ephemeral_public: &X25519PublicKey, private_key: &X25519StaticSecret, nonce: &Nonce) -> Result<Vec<u8>, ()> {
+pub fn decrypt(encrypted_message: &[u8], ephemeral_public: &X25519PublicKey, private_key: StaticSecret, nonce: &Nonce) -> Result<Vec<u8>, ()> {
     let shared_secret = private_key.diffie_hellman(ephemeral_public);
 
     let symmetric_key = Key::from_slice(shared_secret.as_bytes());
     let cipher = ChaCha20Poly1305::new(&symmetric_key);
-    println!("{:?}",nonce);
+    //println!("{:?}",nonce);
 
     cipher.decrypt(nonce, encrypted_message).map_err(|_| ())
 }

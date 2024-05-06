@@ -27,8 +27,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn test_crypto(){
-    let enc_data = encrypt(b"Hello World", decode_base64_public_key("afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY="));
-    println!("{:?}", enc_data);
+    let (encrypted_message, ephemeral_public, nonce) = encrypt(b"Hello World", decode_base64_public_key("afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY=")).expect("Encryption failed");
+    match decrypt(&encrypted_message, &ephemeral_public, decode_base64_private_key("6BCIEufBjTrfeprQi3a3jA3khSPm6NzeAidXWlVYYkA="), &nonce) {
+        Ok(decrypted_message) => {
+            println!("Encrypted message: {:?}", encrypted_message);
+            println!("Decrypted message: {:?}", String::from_utf8(decrypted_message).expect("Invalid UTF-8"));
+        }
+        Err(_) => {
+            println!("Failed to decrypt the message");
+        }
+    }
 }
 
 
