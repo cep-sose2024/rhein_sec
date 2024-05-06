@@ -1,3 +1,5 @@
+mod crypto;
+
 use std::fs;
 use std::time::Instant;
 use anyhow::Result;
