@@ -67,6 +67,15 @@ Then, execute it using:
 ```
 This script automatically installs all the required packages and launches the backend server, Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
 
+Every time you would like to unseal Vault, just run the unseal script in the same way with:
+``` bash
+./unsealVault.sh
+```
+But first, make sure that the server is started with:
+``` bash
+vault server -config=vault/VaultConfig
+ ```
+
 
 ### setting up the code
 We recommend the following:
@@ -114,12 +123,16 @@ Finally, put the root token in a file called `nksconfig.json` in the **backend/*
 This enables the RheinSec NKS solution to have many different instances of Vault hosting the secrets. This would make it very hard for the user’s secrets to get lost.
 
 
-### Using the Client
+### Using the Client & the backend Server
 The client is currently distributed as a Rust executable for Windows, Linux, and macOS. The latest releases can be found on the releases page.
 
 The current capabilities are limited since the crypto layer hasn’t been implemented yet by the enmeshed developers, thus basic PoC code is implemented. There are two main methods:<br>
  one for testing the CRUD capabilities of the backend server, and another for testing the speed of the server. Currently, the response times for everything running on the same system (vault, backend server, client) is about 50 milliseconds. It doesn’t seem that the system gets slower with an expanding number of tokens. Currently, the number of tokens created on servers is about 14,000, which still hasn’t affected the speed.
 
+Assuming you have already downloaded the backend server executable from the releases and configured the nksConfig.json file, you can run it via:
+```
+./backend <--UseSwagger> -o <your_log_file> -port <>
+```
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
 
