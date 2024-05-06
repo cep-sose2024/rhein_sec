@@ -29,7 +29,7 @@ public class VaultCon
     public VaultCon()
     {
         ReadConfig();
-        for (var i = 0; i < _tokens.Count; i++)
+        for (var i = 0; i < _addresses.Count; i++)
             CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy, _addresses[i], _tokens[i]);
     }
 

@@ -10,6 +10,12 @@ namespace backend.Controllers;
 public class apidemo : ControllerBase
 {
     private VaultCon _vaultCon = new();
+    private readonly ILogger _logger;
+
+    public apidemo(ILogger<apidemo> logger)
+    {
+        _logger = logger; 
+    }
 
     [HttpGet("getToken/")]
     public async Task<IActionResult> getToken()
