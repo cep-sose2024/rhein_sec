@@ -1,9 +1,7 @@
-mod crypto;
-
 use std::fs;
 use std::time::Instant;
 use anyhow::Result;
-use reqwest::Error as ReqwestError;
+use reqwest::{Error as ReqwestError, Response};
 use serde_json::{Value};
 use serde_json::json;
 use reqwest::Error;
@@ -163,7 +161,52 @@ fn get_usertoken_from_file() -> Option<String> {
     }
 }
 
-async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {
+
+async fn get_and_save_key_pair(token: &str, key_name: &str, key_type: &str) -> std::result::Result<String, Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let request_body = json!(
+        {
+        "token": token,
+        "name": key_name,
+        "type": key_type
+        }
+    );
+    println!("body: {}",request_body);
+
+    let response = client
+        .post("http://localhost:5272/apidemo/generateAndSaveKeyPair")
+        .header("accept", "*/*")
+        .header("Content-Type", "application/json-patch+json")
+        .json(&request_body)
+        .send()
+        .await?;
+
+    let status = response.status(); // Clone the status here
+    let response_text = response.text().await?;
+    if !status.is_success() {
+        println!("Error response:\n{}", response_text);
+        return Err(format!("Server returned status code: {}", status).into());
+    }
+
+    println!("Success response:\n{}", response_text);
+    let response_json: Value = serde_json::from_str(&response_text)?;
+
+    if let Some(user_token) = response_json.get("newToken") {
+        if let Some(user_token_str) = user_token.as_str() {
+            let token_data = json!({
+                "usertoken": user_token_str
+            });
+            fs::write("token.json", token_data.to_string())?;
+        }
+    }
+    let pretty_response = serde_json::to_string_pretty(&response_json)
+        .unwrap_or_else(|_| String::from("Error formatting JSON"));
+
+    Ok(pretty_response)
+}
+
+
+async fn benchmark() -> Result<(), Box<dyn std::error::Error>> {//NOT UP TO DATE
     let start = Instant::now();
 
     let mut tokens = Vec::new();
@@ -218,7 +261,7 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
 
     let data = json!({
     "Keys": keys,
-    "Signatures": [] 
+    "Signatures": []
 });
     println!("Storing secrets:");
     add_secrets(&token, data).await?;
@@ -232,10 +275,22 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     token = get_usertoken_from_file().unwrap();
     println!("Retrieving secrets again:");
     secret = get_secrets(&token).await?;
-    println!("{}", secret);
+    println!("get Secrets 1 {}", secret);
+
+    token = get_usertoken_from_file().unwrap();
+    let keys;
+    println!("GetKeyPair:");
+    match get_and_save_key_pair(&token, "testKey", "ecc").await {
+        Ok(response) => {
+            println!("Response:\n{}", response);
+            keys = response;
+        },
+        Err(e) => eprintln!("Error: {}", e),
+    }
+
+
     let duration = start.elapsed();
     println!("Time elapsed is: {:?}", duration);
 
     Ok(())
 }
-

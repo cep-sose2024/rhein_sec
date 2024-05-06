@@ -14,7 +14,7 @@ public class apidemo : ControllerBase
 
     public apidemo(ILogger<apidemo> logger)
     {
-        _logger = logger; 
+        _logger = logger;
     }
 
     [HttpGet("getToken/")]
@@ -32,7 +32,7 @@ public class apidemo : ControllerBase
         for (var i = 0; i < _vaultCon._tokens.Count; i++)
             token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
                 _vaultCon._tokens[i], user_token);
-        
+
         var dataToSave = new JObject
         {
             ["keys"] = new JArray(),
@@ -133,10 +133,15 @@ public class apidemo : ControllerBase
             var returnObject = new
             {
                 tokenExists,
-
                 returnCode = ret,
                 newToken
             };
+            var dataToSave = new JObject
+            {
+                ["keys"] = new JArray(),
+                ["signatures"] = new JArray()
+            };
+            await putSecret(newToken, dataToSave);
             return Ok(returnObject);
         }
 
@@ -172,7 +177,7 @@ public class apidemo : ControllerBase
 
             var retJObject = JObject.Parse(ret.ToString());
             var keysArray = (JArray)retJObject["data"]["keys"];
-            var existingKey = keysArray.FirstOrDefault(obj => obj["id"].Value<string>() == keyPairModel.Name);
+            var existingKey = keysArray.FirstOrDefault(obj => obj["Id"].Value<string>() == keyPairModel.Name);
 
             if (existingKey != null)
             {

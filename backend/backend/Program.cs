@@ -15,19 +15,16 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext()
     .WriteTo.Console());
 
-builder.Services.AddLogging(loggingBuilder =>
-{
-    loggingBuilder.AddSerilog(Log.Logger);
-});
-builder.WebHost.ConfigureKestrel((context, serverOptions) => 
+builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSerilog(Log.Logger); });
+builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 {
     serverOptions.AddServerHeader = false;
-    
+
     var portArgumentIndex = args.ToList().IndexOf("-port");
     if (portArgumentIndex >= 0 && args.Length > portArgumentIndex + 1)
     {
         var port = args[portArgumentIndex + 1];
-        if (int.TryParse(port, out int portNumber))
+        if (int.TryParse(port, out var portNumber))
         {
             serverOptions.ListenAnyIP(portNumber);
             Log.Information($"Listening on port: {portNumber}");
@@ -52,7 +49,7 @@ var loggerConfiguration = new LoggerConfiguration().WriteTo.Console();
 var outputFileArgumentIndex = args.ToList().IndexOf("-o");
 if (outputFileArgumentIndex >= 0 && args.Length > outputFileArgumentIndex + 1)
 {
-    Console.WriteLine("Started Logging to "+args[outputFileArgumentIndex + 1]);
+    Console.WriteLine("Started Logging to " + args[outputFileArgumentIndex + 1]);
     var logFilePath = args[outputFileArgumentIndex + 1];
     loggerConfiguration.WriteTo.File(logFilePath);
 }
@@ -77,10 +74,11 @@ if (app.Environment.IsDevelopment() || args.Contains("--UseSwagger"))
         foreach (var address in addresses)
         {
             var swaggerUrl = $"{address}/swagger";
-            Log.Information($"Swagger UI started on: {swaggerUrl}"); 
+            Log.Information($"Swagger UI started on: {swaggerUrl}");
         }
     });
 }
+
 app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
@@ -96,6 +94,6 @@ app.MapControllers();
 
 app.MapFallbackToFile("/index.html");
 
-Log.Information("Application is running!"); 
+Log.Information("Application is running!");
 
 app.Run();
