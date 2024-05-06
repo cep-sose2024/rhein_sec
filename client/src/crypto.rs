@@ -11,7 +11,6 @@ use base64::prelude::*;
 use ed25519_dalek::{Verifier, SigningKey, VerifyingKey, Signature, Signer};
 
 fn main() {
-
     let x25519_keys = decode_base64("afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY=", "6BCIEufBjTrfeprQi3a3jA3khSPm6NzeAidXWlVYYkA=");
     let message = b"hello world.";
     }
