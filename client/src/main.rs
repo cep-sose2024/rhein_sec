@@ -7,17 +7,31 @@ use reqwest::Error as ReqwestError;
 use serde_json::{Value};
 use serde_json::json;
 use reqwest::Error;
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashMap;
+use crate::crypto::decode_base64_private_key;
+use crate::crypto::decode_base64_public_key;
+use crate::crypto::encrypt;
+use crate::crypto::decrypt;
+use crate::crypto::sign;
+
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     crud_test().await?;
+    test_crypto();
     //benchmark().await.expect("error when running benchmark");
     Ok(())
 }
+
+fn test_crypto(){
+    let enc_data = encrypt(b"Hello World", decode_base64_public_key("afEWKMdxXarhkRbCUB37deol7TyTi4OeffNEDV/P6CY="));
+    println!("{:?}", enc_data);
+}
+
+
 
 async fn get_token(benchmark: bool) -> Result<String, Box<dyn std::error::Error>> {
     let response: Value = reqwest::Client::new()
