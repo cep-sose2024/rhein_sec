@@ -19,6 +19,25 @@ builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.AddSerilog(Log.Logger);
 });
+builder.WebHost.ConfigureKestrel((context, serverOptions) => 
+{
+    serverOptions.AddServerHeader = false;
+    
+    var portArgumentIndex = args.ToList().IndexOf("-port");
+    if (portArgumentIndex >= 0 && args.Length > portArgumentIndex + 1)
+    {
+        var port = args[portArgumentIndex + 1];
+        if (int.TryParse(port, out int portNumber))
+        {
+            serverOptions.ListenAnyIP(portNumber);
+            Log.Information($"Listening on port: {portNumber}");
+        }
+        else
+        {
+            Log.Error("Invalid port number provided");
+        }
+    }
+});
 
 builder.WebHost.ConfigureKestrel(serverOptions => { serverOptions.AddServerHeader = false; });
 builder.Services.AddControllers().AddNewtonsoftJson(options =>
