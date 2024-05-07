@@ -1,7 +1,8 @@
 mod crypto;
 mod api;
 
-use std::fs;
+use io::stdin;
+use std::{fs, io};
 use std::time::Instant;
 use anyhow::Result;
 use reqwest::{Error as ReqwestError, Response};
@@ -11,6 +12,10 @@ use reqwest::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashMap;
+use crate::api::{get_secrets, search_signature_from_api};
+use crate::api::get_keys_from_api;
+use crate::api::get_keys;
+use crate::api::search_key_from_api;
 use crate::crypto::decode_base64_private_key;
 use crate::crypto::decode_base64_public_key;
 use crate::crypto::encrypt;
@@ -92,10 +97,22 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
         "Curve": "Curve25519",
     }
 ]);
+    let signatures = json!([
+    {
+        "id": "signature1",
+        "hashingAlg" : "SHA384",
+        "signature": "SignatureText1",
+     },
+     {
+        "id": "signature2",
+        "hashingAlg" : "SHA384",
+        "signature": "SignatureText2",
+    }
+]);
 
     let data = json!({
     "Keys": keys,
-    "Signatures": []
+    "Signatures": signatures
 });
     println!("Storing secrets:");
     api::add_secrets(&token, data).await?;
@@ -103,6 +120,49 @@ async fn crud_test() -> Result<(), Box<dyn std::error::Error>> {
     println!("Retrieving secrets:");
     let mut secret = api::get_secrets(&token).await?;
     println!("{}", secret);
+
+    token = api::get_usertoken_from_file().unwrap();
+
+    println!("");
+    println!("-----------------------------------------");
+    let key_id = "key2"; // enter Key to be searched
+    println!("Searching Key: {}", key_id);
+    let response = get_secrets(&token).await?;
+    match search_key_from_api(&response, &key_id).await? {
+        Some((public_key, private_key, key_type, length, curve)) => {
+            println!("Public Key for key '{}': {}", key_id, public_key);
+            println!("Private Key for key '{}': {}", key_id, private_key);
+            println!("Type for key '{}': {}", key_id, key_type);
+            println!("Length for key '{}': {}", key_id, length);
+            match curve {
+                Some(curve) => println!("Curve for key '{}': {}", key_id, curve),
+                None => println!("Curve for key '{}': None", key_id),
+            }
+        }
+        None => println!("No keys found for ID '{}'", key_id),
+    }
+    println!("-----------------------------------------");
+    println!("");
+
+    //token = api::get_usertoken_from_file().unwrap();
+
+    // println!("");
+    // println!("-----------------------------------------");
+    // let signature_id = "signature1";
+    // println!("Searching signature: {}", signature_id);
+    // let response = get_secrets(&token).await?;
+    //println!("Searching signature: {}", response);
+    // token = api::get_usertoken_from_file().unwrap();
+    // match search_signature_from_api(&token, &signature_id).await? {
+    //    Some((hashing_alg, signature_text)) => {
+    //       println!("Hashing Algorithm for signature '{}': {}", signature_id, hashing_alg);
+    //       println!("Signature for signature '{}': {}", signature_id, signature_text);
+    //    }
+    //    None => println!("No signatures found for ID '{}'", signature_id),
+    //}
+    //println!("-----------------------------------------");
+    //println!("");
+
     token = api::get_usertoken_from_file().unwrap();
     println!("Deleting secrets:");
     api::delete_secrets(&token).await?;
