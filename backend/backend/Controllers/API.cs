@@ -177,7 +177,7 @@ public class apidemo : ControllerBase
 
             var retJObject = JObject.Parse(ret.ToString());
             var keysArray = (JArray)retJObject["data"]["keys"];
-            var existingKey = keysArray.FirstOrDefault(obj => obj["Id"].Value<string>() == keyPairModel.Name);
+            var existingKey = keysArray.FirstOrDefault(obj => obj["id"].Value<string>() == keyPairModel.Name);
 
             if (existingKey != null)
             {
@@ -190,8 +190,10 @@ public class apidemo : ControllerBase
             }
 
             var keyPair = new JObject();
-            if (keyPairModel.Type.ToLower().Equals("ecc"))
+            if (keyPairModel.Type.ToLower().Equals("ecdh"))
                 keyPair = Crypto.GetxX25519KeyPair(keyPairModel.Name);
+            if (keyPairModel.Type.ToLower().Equals("ecdsa"))
+                keyPair = Crypto.GetEd25519KeyPair(keyPairModel.Name);
             else if (keyPairModel.Type.ToLower().Equals("rsa")) keyPair = Crypto.GetRsaKeyPair(keyPairModel.Name);
 
             if (secretHasKeys(retJObject))
