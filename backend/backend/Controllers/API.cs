@@ -177,7 +177,7 @@ public class apidemo : ControllerBase
 
             var retJObject = JObject.Parse(ret.ToString());
             var keysArray = (JArray)retJObject["data"]["keys"];
-            var existingKey = keysArray.FirstOrDefault(obj => obj["id"].Value<string>() == keyPairModel.Name);
+            var existingKey = keysArray.FirstOrDefault(obj => obj["id"].Value<string>().ToLower() == keyPairModel.Name.ToLower());
 
             if (existingKey != null)
             {

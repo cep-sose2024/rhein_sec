@@ -145,13 +145,16 @@ public class VaultCon
         foreach (var jsonObject in jsonArray)
         {
             var address = (string)jsonObject["address"];
+            if (address.EndsWith("/"))
+            {
+                address = address.Remove(address.Length - 1);
+            }
             var token = (string)jsonObject["token"];
-
             _addresses.Add(address);
             _tokens.Add(token);
         }
-    }
 
+    }
 
     public static string GenerateToken(int length)
     {
