@@ -76,7 +76,6 @@ public class VaultCon
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
         var response = await client.PostAsync(url, content);
-
         var responseContent = await response.Content.ReadAsStringAsync();
         var responseJson = JObject.Parse(responseContent);
         var user_token = responseJson["auth"]["client_token"].ToString();
@@ -127,7 +126,7 @@ public class VaultCon
 
     public async Task<int> DeleteSecrets(string token, string address)
     {
-        var url = $"{address}/v1/cubbyhole/secrets";
+            var url = $"{address}/v1/cubbyhole/secrets";
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -196,7 +195,6 @@ public class VaultCon
         client.DefaultRequestHeaders.Add("X-Vault-Token", rootToken);
 
         var requestBody = $"{{\"token\": \"{userToken}\"}}";
-
         var response = await client.PostAsync(url, new StringContent(requestBody));
         var responseBody = await response.Content.ReadAsStringAsync();
         bool tokenExists;

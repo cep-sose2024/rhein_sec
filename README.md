@@ -56,25 +56,50 @@ Network key storage is designed to solve the issue of some devices not having a 
 
 ### Installation Script
 
-We provide a Linux installation script available at `misc/install.sh`. Ensure that you make the script executable before running it with the following command:
+We provide a Linux installation script available at `misc/install.sh`. This script accepts four optional arguments:
+
+1. The IP address for the Vault server (default is localhost)
+2. The port number for the Vault server (default is 8200)
+3. A flag to initialize the Vault server (default is true)
+4. A flag to download the backend (default is true)
+
+Ensure that you make the script executable before running it with the following command:
 
 ```bash
 chmod +x install.sh
 ```
+
 Then, execute it using:
-``` bash 
-./install.sh <your_desiered_vault_port>
+
+```bash
+./install.sh <your_desired_ip> <your_desired_vault_port> <initialize_vault> <download_backend>
 ```
+
+Replace `<your_desired_ip>`, `<your_desired_vault_port>`, `<initialize_vault>`, and `<download_backend>` with your desired IP address, port number, initialization flag, and backend download flag, respectively. If not provided, the script will use the default values.
 This script automatically installs all the required packages and launches the backend server, Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
 
 Every time you would like to unseal Vault, just run the unseal script in the same way with:
 ``` bash
-./unsealVault.sh
+./unsealVault.sh <your_desired_ip> <your_desired_vault_port>
 ```
 But first, make sure that the server is started with:
 ``` bash
 vault server -config=vault/VaultConfig
  ```
+### Cluster Setup Script
+
+We provide a Linux cluster setup script available at `misc/cluster.sh`. This script uses the installation script to create three Vault instances that form a cluster. Ensure that you make the script executable before running it with the following command:
+
+```bash
+chmod +x cluster.sh
+```
+
+Then, execute it using:
+
+```bash
+./cluster.sh
+```
+This would also make Download the server executable from the releases and configure the nksConfig.json file automatically, it would then run on http://localhost:5000.
 
 
 ### setting up the code

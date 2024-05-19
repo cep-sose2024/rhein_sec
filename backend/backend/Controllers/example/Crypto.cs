@@ -4,6 +4,7 @@ using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Security;
 
 public class Crypto
@@ -40,14 +41,20 @@ public class Crypto
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
 
-        var privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(keyPair.Private);
-        var publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keyPair.Public);
-
-        var privateKey = Convert.ToBase64String(privateKeyInfo.GetDerEncoded());
-        var publicKey = Convert.ToBase64String(publicKeyInfo.GetDerEncoded());
+        var privateKey = KeyToPem(keyPair.Private);
+        var publicKey = KeyToPem(keyPair.Public);
 
         return (privateKey, publicKey);
     }
+
+    private static string KeyToPem(AsymmetricKeyParameter key)
+    {
+        var stringWriter = new StringWriter();
+        var pemWriter = new PemWriter(stringWriter);
+        pemWriter.WriteObject(key);
+        return stringWriter.ToString();
+    }
+
 
     public static JObject GetxX25519KeyPair(string name, int keySize = 256)
     {
