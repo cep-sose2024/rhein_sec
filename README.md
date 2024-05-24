@@ -101,6 +101,19 @@ Then, execute it using:
 ```
 This would also make Download the server executable from the releases and configure the nksConfig.json file automatically, it would then run on http://localhost:5000.
 
+To start the vaults, use the following command:
+
+```bash
+./cluster.sh start
+```
+
+This command will start the vault servers in `vault1`, `vault2`, and `vault3` directories and unseal them.
+
+To stop the vaults, use the following command:
+
+```bash
+./cluster.sh stop
+```
 
 ### setting up the code
 We recommend the following:

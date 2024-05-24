@@ -214,3 +214,6 @@ fi
 
 # Print the PID of the Vault server in red at the end of the script
 echo -e "\033[0;31mThe PID of the Vault server is: $VAULT_PID\033[0m"
+
+# Append the PID of the Vault server to the 'vault_PIDs' file
+echo $VAULT_PID >> vault_PIDs
