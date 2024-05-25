@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace backend.Controllers.example;
@@ -22,7 +23,10 @@ public class SecretModel
 
 public class DataModel
 {
+    [JsonProperty("keys")]
     public List<KeyModel> Keys { get; set; }
+
+    [JsonProperty("signatures")]
     public List<SignatureModel> Signatures { get; set; }
 
     public JObject ToJObject()
@@ -36,11 +40,22 @@ public class DataModel
 
 public class KeyModel
 {
+    [JsonProperty("id")]
     public string Id { get; set; }
+
+    [JsonProperty("type")]
     public string Type { get; set; }
+
+    [JsonProperty("publickey")]
     public string PublicKey { get; set; }
+
+    [JsonProperty("privatekey")]
     public string PrivateKey { get; set; }
+
+    [JsonProperty("curve")]
     public string Curve { get; set; }
+
+    [JsonProperty("length")]
     public int Length { get; set; }
 }
 

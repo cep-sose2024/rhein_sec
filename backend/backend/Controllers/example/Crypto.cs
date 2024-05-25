@@ -21,7 +21,7 @@ public class Crypto
 
         return (privateKey, publicKey);
     }
-    
+
     private static (string, string) GenerateEd25519KeyPair(int keySize = 256)
     {
         var generator2 = new Ed25519KeyPairGenerator();
@@ -61,7 +61,7 @@ public class Crypto
         var (privateKey, publicKey) = GenerateX25519KeyPair(keySize);
         return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize.ToString());
     }
-    
+
     public static JObject GetEd25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateEd25519KeyPair(keySize);

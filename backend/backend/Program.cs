@@ -2,6 +2,14 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Newtonsoft.Json;
 using Serilog;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Hosting.Server;
+using System.Net.Security;
+using System.Security;
+using System.Security.Authentication;
+using System.Text;
+using backend.Controllers.example.logging;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,19 +22,33 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .ReadFrom.Configuration(context.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console());
-
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365); // Set the duration (e.g., 1 year)
+});
 builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSerilog(Log.Logger); });
 builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 {
     serverOptions.AddServerHeader = false;
+    var keyBytes = File.ReadAllBytes("certs/key.key");
+
+    // Convert key to SecureString
+    var keyString = Encoding.ASCII.GetString(keyBytes);
+    var keySecureString = new SecureString();
+    foreach (var ch in keyString) keySecureString.AppendChar(ch);
+
+    var cert = new X509Certificate2("certs/cert.pfx", "123456");
 
     var portArgumentIndex = args.ToList().IndexOf("-port");
+    var portNumber = 5000;
     if (portArgumentIndex >= 0 && args.Length > portArgumentIndex + 1)
     {
         var port = args[portArgumentIndex + 1];
-        if (int.TryParse(port, out var portNumber))
+        if (int.TryParse(port, out var userSpecifiedPortNumber))
         {
-            serverOptions.ListenAnyIP(portNumber);
+            portNumber = userSpecifiedPortNumber;
             Log.Information($"Listening on port: {portNumber}");
         }
         else
@@ -34,6 +56,34 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
             Log.Error("Invalid port number provided");
         }
     }
+
+    // Configure Kestrel to use this certificate for HTTPS
+    serverOptions.ListenAnyIP(portNumber, listenOptions =>
+    {
+        listenOptions.UseHttps(cert, options =>
+        {
+            options.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+            options.ClientCertificateMode = ClientCertificateMode.NoCertificate;
+            options.OnAuthenticate = (context, sslOptions) =>
+            {
+                sslOptions.CipherSuitesPolicy = new CipherSuitesPolicy(new[]
+                {
+                    // TLS 1.3 Ciphers
+                    TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+                    TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+                    TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+
+                    // TLS 1.2 Ciphers
+                    TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                    TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                    TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                    TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                    TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                    TlsCipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+                });
+            };
+        });
+    });
 });
 
 builder.WebHost.ConfigureKestrel(serverOptions => { serverOptions.AddServerHeader = false; });
@@ -58,8 +108,11 @@ Log.Logger = loggerConfiguration.CreateLogger();
 
 
 var app = builder.Build();
-
+app.UseHsts();
+app.UseHttpsRedirection();
 app.UseMiddleware<RequestLoggingMiddleware>();
+app.UseMiddleware<ExceptionMiddleware>();
+
 
 if (app.Environment.IsDevelopment() || args.Contains("--UseSwagger"))
 {
@@ -86,9 +139,9 @@ app.UseSerilogRequestLogging(options =>
         diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress?.ToString());
     };
 });
-app.UseHttpsRedirection();
 
-app.UseAuthorization();
+
+//app.UseAuthorization();
 
 app.MapControllers();
 

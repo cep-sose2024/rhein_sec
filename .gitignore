@@ -9,3 +9,4 @@ client/token.json
 client/tokens.txt
 backend/backend/log.txt
 crypto_test/*
+.idea/.idea.rhein_sec.dir/.idea/.gitignore

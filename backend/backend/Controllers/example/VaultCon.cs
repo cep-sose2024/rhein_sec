@@ -1,9 +1,11 @@
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Http.HttpResults;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+
 
 namespace backend.Controllers.example;
 
@@ -14,18 +16,7 @@ public class VaultCon
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
-
-    /*public static async Task Main(string[] args)
-    {
-
-        var stopwatch = Stopwatch.StartNew();
-        string policyName = "UserPolicy";
-        string actuaname = await CreateUserPolicy(policyName, PolicyOptions.CRUDPolicy);
-        string token = await CreateUserToken(actuaname);
-        await CreateSecret(token);
-        stopwatch.Stop();
-        Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
-    }*/
+    
     public VaultCon()
     {
         ReadConfig();
@@ -82,11 +73,12 @@ public class VaultCon
         return new JObject { ["token"] = user_token }.ToString();
     }
 
-    public async Task<int> CreateSecret(string token, JObject newSecret, string address)
+    public async Task<int> CreateSecret(string token, string newSecretJson, string address)
     {
         var url = $"{address}/v1/cubbyhole/secrets";
 
-        var content = new StringContent(newSecret.ToString(), Encoding.UTF8, "application/json");
+        // Create a StringContent using the JSON string directly
+        var content = new StringContent(newSecretJson, Encoding.UTF8, "application/json");
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -95,6 +87,7 @@ public class VaultCon
 
         return (int)response.StatusCode;
     }
+
 
 
     public async Task<object> GetSecrets(string token, string address)
@@ -126,7 +119,7 @@ public class VaultCon
 
     public async Task<int> DeleteSecrets(string token, string address)
     {
-            var url = $"{address}/v1/cubbyhole/secrets";
+        var url = $"{address}/v1/cubbyhole/secrets";
 
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -144,15 +137,11 @@ public class VaultCon
         foreach (var jsonObject in jsonArray)
         {
             var address = (string)jsonObject["address"];
-            if (address.EndsWith("/"))
-            {
-                address = address.Remove(address.Length - 1);
-            }
+            if (address.EndsWith("/")) address = address.Remove(address.Length - 1);
             var token = (string)jsonObject["token"];
             _addresses.Add(address);
             _tokens.Add(token);
         }
-
     }
 
     public static string GenerateToken(int length)
@@ -218,28 +207,34 @@ public class VaultCon
     public async Task<string> RotateUserToken(string policy, string address, string token, string userToken,
         string newToken)
     {
+
         //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
         var secretsString = secretsObject.ToString();
         var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(secretsString);
-        JObject secrets;
+        JsonElement secrets;
         if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))
         {
             var jsonData = JsonConvert.SerializeObject(secretsDeserialized["data"]);
-            secrets = JObject.Parse(jsonData);
+            secrets = JsonDocument.Parse(jsonData).RootElement;
         }
         else
         {
-            secrets = new JObject();
+            secrets = JsonDocument.Parse("{}").RootElement;
         }
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         //create new token
         await CreateUserToken(policy, address, token, newToken);
         //store secret from variable with new token
-        await CreateSecret(newToken, secrets, address);
+        await CreateSecret(newToken, secrets.ToString(), address);
         //delete old secret in old token
         await DeleteToken(token, address, userToken);
         //return new token
+        stopwatch.Stop();
+        var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+        Console.WriteLine($"Time taken222: {elapsedMilliseconds} ms");
         return newToken;
     }
 }
