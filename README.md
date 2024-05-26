@@ -182,7 +182,18 @@ Assuming you have already downloaded the backend server executable from the rele
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
+## ‍🛡️️ Security Configuration
 
+There is no single correct configuration for our NKS solution due to the flexibility of the tools we provide. However, here are some general guidelines and best practices to follow:
+
+1. All Vault instances should be behind a proxy and only accessible from the other Vault instances and the C# backend server.
+2. It's recommended to use Docker or Kubernetes to manage the Vault instances.
+3. TODO: Create a Docker image for the backend C# server.
+
+**Please note that the scripts we provide are merely examples of what your configuration might look like and are NOT intended for use in production environments.**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
 
 
 
