@@ -56,17 +56,64 @@ Network key storage is designed to solve the issue of some devices not having a 
 
 ### Installation Script
 
-We provide a Linux installation script available at `misc/install.sh`. Ensure that you make the script executable before running it with the following command:
+We provide a Linux installation script available at `misc/install.sh`. This script accepts four optional arguments:
+
+1. The IP address for the Vault server (default is localhost)
+2. The port number for the Vault server (default is 8200)
+3. A flag to initialize the Vault server (default is true)
+4. A flag to download the backend (default is true)
+
+Ensure that you make the script executable before running it with the following command:
 
 ```bash
 chmod +x install.sh
 ```
+
 Then, execute it using:
-``` bash 
-./install.sh <your_desiered_vault_port>
+
+```bash
+./install.sh <your_desired_ip> <your_desired_vault_port> <initialize_vault> <download_backend>
 ```
+
+Replace `<your_desired_ip>`, `<your_desired_vault_port>`, `<initialize_vault>`, and `<download_backend>` with your desired IP address, port number, initialization flag, and backend download flag, respectively. If not provided, the script will use the default values.
 This script automatically installs all the required packages and launches the backend server, Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
 
+Every time you would like to unseal Vault, just run the unseal script in the same way with:
+``` bash
+./unsealVault.sh <your_desired_ip> <your_desired_vault_port>
+```
+But first, make sure that the server is started with:
+``` bash
+vault server -config=vault/VaultConfig
+ ```
+### Cluster Setup Script
+
+We provide a Linux cluster setup script available at `misc/cluster.sh`. This script uses the installation script to create three Vault instances that form a cluster. Ensure that you make the script executable before running it with the following command:
+
+```bash
+chmod +x cluster.sh
+```
+
+Then, execute it using:
+
+```bash
+./cluster.sh
+```
+This would also make Download the server executable from the releases and configure the nksConfig.json file automatically, it would then run on http://localhost:5000.
+
+To start the vaults, use the following command:
+
+```bash
+./cluster.sh start
+```
+
+This command will start the vault servers in `vault1`, `vault2`, and `vault3` directories and unseal them.
+
+To stop the vaults, use the following command:
+
+```bash
+./cluster.sh stop
+```
 
 ### setting up the code
 We recommend the following:
@@ -114,12 +161,16 @@ Finally, put the root token in a file called `nksconfig.json` in the **backend/*
 This enables the RheinSec NKS solution to have many different instances of Vault hosting the secrets. This would make it very hard for the user’s secrets to get lost.
 
 
-### Using the Client
+### Using the Client & the backend Server
 The client is currently distributed as a Rust executable for Windows, Linux, and macOS. The latest releases can be found on the releases page.
 
 The current capabilities are limited since the crypto layer hasn’t been implemented yet by the enmeshed developers, thus basic PoC code is implemented. There are two main methods:<br>
  one for testing the CRUD capabilities of the backend server, and another for testing the speed of the server. Currently, the response times for everything running on the same system (vault, backend server, client) is about 50 milliseconds. It doesn’t seem that the system gets slower with an expanding number of tokens. Currently, the number of tokens created on servers is about 14,000, which still hasn’t affected the speed.
 
+Assuming you have already downloaded the backend server executable from the releases and configured the nksConfig.json file, you can run it via:
+```
+./backend <--UseSwagger> -o <your_log_file> -port <>
+```
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
 
@@ -131,7 +182,18 @@ The current capabilities are limited since the crypto layer hasn’t been implem
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
+## ‍🛡️️ Security Configuration
 
+There is no single correct configuration for our NKS solution due to the flexibility of the tools we provide. However, here are some general guidelines and best practices to follow:
+
+1. All Vault instances should be behind a proxy and only accessible from the other Vault instances and the C# backend server.
+2. It's recommended to use Docker or Kubernetes to manage the Vault instances.
+3. TODO: Create a Docker image for the backend C# server.
+
+**Please note that the scripts we provide are merely examples of what your configuration might look like and are NOT intended for use in production environments.**
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
 
 
 

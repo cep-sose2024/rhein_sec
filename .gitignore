@@ -7,3 +7,10 @@ backend/backend/bin
 backend/backend/nksconfig.json
 client/token.json
 client/tokens.txt
+backend/backend/log.txt
+crypto_test/*
+.idea/*
+backend/backend.tar.gz
+backend/backend/Controllers.zip
+backend/backend/logtest.log
+backend/backend/certs/*
