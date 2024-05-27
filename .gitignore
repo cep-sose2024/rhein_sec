@@ -13,3 +13,4 @@ crypto_test/*
 backend/backend.tar.gz
 backend/backend/Controllers.zip
 backend/backend/logtest.log
+backend/backend/certs/*

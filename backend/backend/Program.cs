@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using Org.BouncyCastle.Security;
 using System.Net.Security;
@@ -29,6 +30,7 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
     options.MaxAge = TimeSpan.FromDays(365); 
 });
+GenerateCertificatesIfNotExist("certs");
 builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSerilog(Log.Logger); });
 builder.WebHost.ConfigureKestrel((context, serverOptions) =>
 {
@@ -159,3 +161,46 @@ app.MapFallbackToFile("/index.html");
 Log.Information("Application is running!");
 
 app.Run();
+
+
+
+
+
+static void GenerateCertificatesIfNotExist(string certPath)
+{
+    var keyPath = Path.Combine(certPath, "key.key");
+    var certFilePath = Path.Combine(certPath, "cert.crt");
+
+    if (!File.Exists(keyPath) || !File.Exists(certFilePath))
+    {
+        // Generate key
+        var genKeyProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                Arguments = $"-c \"openssl genpkey -algorithm RSA -out {keyPath} -pkeyopt rsa_keygen_bits:2048\""
+            }
+        };
+        genKeyProcess.Start();
+        genKeyProcess.WaitForExit();
+
+        // Generate certificate
+        var genCertProcess = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/bash",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                Arguments = $"-c \"openssl req -new -x509 -key {keyPath} -out {certFilePath} -days 365 -subj \"/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=localhost\" -addext \"subjectAltName = DNS:localhost, IP:127.0.0.1\"\""
+            }
+        };
+        genCertProcess.Start();
+        genCertProcess.WaitForExit();
+    }
+}
