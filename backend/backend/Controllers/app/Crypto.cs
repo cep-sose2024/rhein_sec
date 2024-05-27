@@ -59,23 +59,23 @@ public class Crypto
     public static JObject GetxX25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateX25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize.ToString());
+        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize);
     }
 
     public static JObject GetEd25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateEd25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize.ToString());
+        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize);
     }
 
     public static JObject GetRsaKeyPair(string name, int keySize = 2048)
     {
         var (privateKey, publicKey) = GenerateRsaKeyPair(keySize);
-        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize.ToString());
+        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize);
     }
 
     private static JObject MakeKeyJson(string name, string alg, string curve, string publicKey, string privateKey,
-        string length)
+        int length)
     {
         var keyJson = new JObject();
 

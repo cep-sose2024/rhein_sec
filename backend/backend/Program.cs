@@ -28,7 +28,7 @@ builder.Services.AddHsts(options =>
 {
     options.Preload = true;
     options.IncludeSubDomains = true;
-    options.MaxAge = TimeSpan.FromDays(365); 
+    options.MaxAge = TimeSpan.FromDays(365);
 });
 GenerateCertificatesIfNotExist("certs");
 builder.Services.AddLogging(loggingBuilder => { loggingBuilder.AddSerilog(Log.Logger); });
@@ -37,7 +37,7 @@ builder.WebHost.ConfigureKestrel((context, serverOptions) =>
     serverOptions.AddServerHeader = false;
 
     var portArgumentIndex = args.ToList().IndexOf("-port");
-    var portNumber = 5000; 
+    var portNumber = 5000;
     if (portArgumentIndex >= 0 && args.Length > portArgumentIndex + 1)
     {
         var port = args[portArgumentIndex + 1];
@@ -163,9 +163,6 @@ Log.Information("Application is running!");
 app.Run();
 
 
-
-
-
 static void GenerateCertificatesIfNotExist(string certPath)
 {
     var keyPath = Path.Combine(certPath, "key.key");
@@ -197,7 +194,8 @@ static void GenerateCertificatesIfNotExist(string certPath)
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                Arguments = $"-c \"openssl req -new -x509 -key {keyPath} -out {certFilePath} -days 365 -subj \"/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=localhost\" -addext \"subjectAltName = DNS:localhost, IP:127.0.0.1\"\""
+                Arguments =
+                    $"-c \"openssl req -new -x509 -key {keyPath} -out {certFilePath} -days 365 -subj \"/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=localhost\" -addext \"subjectAltName = DNS:localhost, IP:127.0.0.1\"\""
             }
         };
         genCertProcess.Start();

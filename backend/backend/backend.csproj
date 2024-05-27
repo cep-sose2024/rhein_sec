@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="certs\" />
+        <Folder Include="certs\"/>
     </ItemGroup>
 
 </Project>

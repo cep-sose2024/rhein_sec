@@ -16,7 +16,7 @@ public class VaultCon
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
-    
+
     public VaultCon()
     {
         ReadConfig();
@@ -87,7 +87,6 @@ public class VaultCon
 
         return (int)response.StatusCode;
     }
-
 
 
     public async Task<object> GetSecrets(string token, string address)
@@ -207,7 +206,6 @@ public class VaultCon
     public async Task<string> RotateUserToken(string policy, string address, string token, string userToken,
         string newToken)
     {
-
         //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
         var secretsString = secretsObject.ToString();
@@ -222,6 +220,7 @@ public class VaultCon
         {
             secrets = JsonDocument.Parse("{}").RootElement;
         }
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
         //create new token
