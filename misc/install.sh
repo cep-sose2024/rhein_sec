@@ -135,6 +135,7 @@ echo "Starting Vault server..."
 mkdir -p vault/data/ && touch vault/data/vault.db # Create the necessary directories and files for Vault
 nohup vault server -config=vault/VaultConfig > vaultoutput.txt 2>&1 & # Start the Vault server in the background and redirect its output to 'vaultoutput.txt'
 VAULT_PID=$! # Capture the PID of the Vault server process
+echo $VAULT_PID > vault_PIDs
 # Wait for Vault to start
 sleep 10 # Wait for 10 seconds to ensure that Vault has started
 
@@ -216,4 +217,3 @@ fi
 echo -e "\033[0;31mThe PID of the Vault server is: $VAULT_PID\033[0m"
 
 # Append the PID of the Vault server to the 'vault_PIDs' file
-echo $VAULT_PID >> vault_PIDs

@@ -5,7 +5,7 @@ function start_vaults {
         cd $dir
         echo "Starting Vault server in $dir..."
         nohup vault server -config=vault/VaultConfig > vaultoutput.txt 2>&1 &
-        echo $! >> vault_PIDs
+        echo $! > vault_PIDs
         cd ..
     done
     sleep 6
