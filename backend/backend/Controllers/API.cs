@@ -7,6 +7,13 @@ using Newtonsoft.Json.Linq;
 
 namespace backend.Controllers;
 
+/// <summary>
+/// Provides API endpoints for managing tokens and secrets in Vault.
+/// </summary>
+/// <remarks>
+/// This class includes endpoints for generating a new token, adding secrets, retrieving secrets, deleting secrets, and generating and saving key pairs.
+/// It inherits from the ControllerBase class, which provides the base class for an MVC controller without view support.
+/// </remarks>
 [ApiController]
 //[Route("[controller]")]
 public class apidemo : ControllerBase
@@ -14,11 +21,21 @@ public class apidemo : ControllerBase
     private VaultCon _vaultCon = new();
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="apidemo"/> class.
+    /// </summary>
+    /// <param name="logger">The logger to be used by the instance.</param>
     public apidemo(ILogger<apidemo> logger)
     {
         _logger = logger;
     }
 
+    /// <summary>
+    /// Asynchronously generates a new user token and stores an empty set of keys and signatures associated with it.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an IActionResult that can be one of the following:
+    /// OkObjectResult (200) - The operation was successful. The result value is the new user token.
+    /// </returns>
     [HttpGet("getToken/")]
     public async Task<IActionResult> getToken()
     {
@@ -51,7 +68,14 @@ public class apidemo : ControllerBase
         return Ok(token);
     }
 
-
+    /// <summary>
+    /// Asynchronously adds secrets to the vault.
+    /// </summary>
+    /// <param name="secretModel">The model containing the token and data to be added as a secret.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an IActionResult that can be one of the following:
+    /// OkObjectResult (200) - The operation was successful. The result value is an object containing the return code and the new token.
+    /// BadRequestObjectResult (400) - The operation failed due to an invalid request format, missing token, internal server error, or unknown user token.
+    /// </returns>
     [HttpPost("addSecrets/")]
     public async Task<IActionResult> addSecrets([FromBody] SecretModel secretModel)
     {
@@ -106,6 +130,15 @@ public class apidemo : ControllerBase
         return BadRequest("Unknown User Token");
     }
 
+    /// <summary>
+    /// Asynchronously retrieves secrets associated with a given token.
+    /// </summary>
+    /// <param name="tokenModel">The model containing the token used to retrieve secrets.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an IActionResult that can be one of the following:
+    /// OkObjectResult (200) - The operation was successful. The result value is an object containing the retrieved data and the new token.
+    /// BadRequestObjectResult (400) - The operation failed due to an unknown user token.
+    /// StatusCodeResult (500) - The operation failed due to an internal server error.
+    /// </returns>
     [HttpPost("getSecrets/")]
     public async Task<IActionResult> getSecrets([FromBody] TokenModel tokenModel)
     {
@@ -144,7 +177,14 @@ public class apidemo : ControllerBase
         return BadRequest("Unknown User Token");
     }
 
-
+    /// <summary>
+    /// Asynchronously deletes secrets associated with a given token.
+    /// </summary>
+    /// <param name="tokenModel">The model containing the token used to delete secrets.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an IActionResult that can be one of the following:
+    /// OkObjectResult (200) - The operation was successful. The result value is an object containing the token existence status, return code, and the new token.
+    /// BadRequestObjectResult (400) - The operation failed due to an unknown user token.
+    /// </returns>
     [HttpDelete("deleteSecrets/")]
     public async Task<IActionResult> deleteSecrets([FromBody] TokenModel tokenModel)
     {
@@ -180,7 +220,15 @@ public class apidemo : ControllerBase
         return BadRequest("Unknown User Token");
     }
 
-
+    /// <summary>
+    /// Asynchronously generates a new key pair and saves it to the vault.
+    /// </summary>
+    /// <param name="keyPairModel">The model containing the token and information about the key pair to be generated.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an IActionResult that can be one of the following:
+    /// OkObjectResult (200) - The operation was successful. The result value is an object containing the data and the new token.
+    /// BadRequestObjectResult (400) - The operation failed due to an unknown user token, existing key ID, invalid key length, or invalid key type.
+    /// StatusCodeResult (500) - The operation failed due to an internal server error.
+    /// </returns>
     [HttpPost("generateAndSaveKeyPair/")]
     public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] KeyPairModel keyPairModel)
     {
@@ -277,7 +325,13 @@ public class apidemo : ControllerBase
         return BadRequest("Unknown User Token");
     }
 
-
+    /// <summary>
+    /// Asynchronously stores a secret in the vault for a given token.
+    /// </summary>
+    /// <param name="token">The token associated with the secret.</param>
+    /// <param name="data">The secret data to be stored in the vault, represented as a JsonElement.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains an integer that represents the status of the operation. 
+    /// If the token does not exist, the method returns 0. If the token exists, the method returns the result of the CreateSecret operation.</returns>
     private async Task<int> PutSecret(string token, JsonElement data)
     {
         var tokenExists = await _vaultCon.checkToken(token);
@@ -293,7 +347,11 @@ public class apidemo : ControllerBase
         return ret;
     }
 
-
+    /// <summary>
+    /// Checks if a given secret contains keys.
+    /// </summary>
+    /// <param name="secret">The secret to be checked, represented as a JObject.</param>
+    /// <returns>A boolean value that indicates whether the secret contains keys. Returns true if the secret contains keys, otherwise returns false.</returns>
     private static bool SecretHasKeys(JObject secret)
     {
         var containsDataField = secret.ContainsKey("data");
@@ -307,6 +365,11 @@ public class apidemo : ControllerBase
         return false;
     }
 
+    /// <summary>
+    /// Asynchronously rotates a user token.
+    /// </summary>
+    /// <param name="userToken">The user token to be rotated.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the new user token.</returns>
     private async Task<string> RotateToken(string userToken)
     {
         var newToken = VaultCon.GenerateToken(80);
@@ -317,6 +380,13 @@ public class apidemo : ControllerBase
         return newToken;
     }
 
+    /// <summary>
+    /// Validates the JSON data for the keys.
+    /// </summary>
+    /// <param name="jsonData">The JSON data to be validated, represented as a JsonElement.</param>
+    /// <returns>An IActionResult that represents the result of the validation. 
+    /// If the validation is successful, the method returns null. 
+    /// If the validation fails, the method returns a BadRequestObjectResult with an error message.</returns>
     private IActionResult? ValidateJsonData(JsonElement jsonData)
     {
         if (jsonData.ValueKind == JsonValueKind.Undefined || jsonData.ValueKind == JsonValueKind.Null)
@@ -381,6 +451,11 @@ public class apidemo : ControllerBase
         return null;
     }
 
+    /// <summary>
+    /// Converts all keys in a JSON object to lower case.
+    /// </summary>
+    /// <param name="data">The JSON object to be processed, represented as a dictionary of string keys and JsonElement values.</param>
+    /// <returns>A new dictionary where all keys in the JSON object, including nested objects and arrays, are converted to lower case.</returns>
     private Dictionary<string, JsonElement> ConvertKeysToLower(Dictionary<string, JsonElement> data)
     {
         var lowerCaseData = new Dictionary<string, JsonElement>();
