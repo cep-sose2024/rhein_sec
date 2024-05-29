@@ -119,6 +119,16 @@ Log.Logger = loggerConfiguration.CreateLogger();
 
 
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'");
+    context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    await next();
+});
+
 app.UseHsts();
 app.UseHttpsRedirection();
 app.UseMiddleware<RequestLoggingMiddleware>();
