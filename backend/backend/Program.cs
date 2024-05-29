@@ -175,12 +175,18 @@ app.Run();
 
 static void GenerateCertificatesIfNotExist(string certPath)
 {
+    if (!Directory.Exists(certPath))
+    {
+        Directory.CreateDirectory(certPath);
+    }
+
     var keyPath = Path.Combine(certPath, "key.key");
     var certFilePath = Path.Combine(certPath, "cert.crt");
 
     if (!File.Exists(keyPath) || !File.Exists(certFilePath))
     {
-        // Generate key
+        Console.WriteLine("No certificates found, creating certificates");
+
         var genKeyProcess = new Process
         {
             StartInfo = new ProcessStartInfo
@@ -195,7 +201,6 @@ static void GenerateCertificatesIfNotExist(string certPath)
         genKeyProcess.Start();
         genKeyProcess.WaitForExit();
 
-        // Generate certificate
         var genCertProcess = new Process
         {
             StartInfo = new ProcessStartInfo
