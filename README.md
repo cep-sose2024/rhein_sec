@@ -186,11 +186,24 @@ Assuming you have already downloaded the backend server executable from the rele
 
 There is no single correct configuration for our NKS solution due to the flexibility of the tools we provide. However, here are some general guidelines and best practices to follow:
 
-1. All Vault instances should be behind a proxy and only accessible from the other Vault instances and the C# backend server.
-2. It's recommended to use Docker or Kubernetes to manage the Vault instances.
-3. TODO: Create a Docker image for the backend C# server.
+1. All Vault instances should be behind a proxy and accessible only from the other Vault instances and the C# backend server.
+    1. The clustering port should be open to the other Vault instances.
+    2. The API port should be open to the C# backend server.
+2. It is recommended to use Docker or Kubernetes to manage the Vault instances.
+3. Use the C# server-side wrapper Docker Container on your server (currently marked as TODO).
+    1. Then, limit the outbound traffic of the container to just the vault instances.
+    2. To do this, we recommend using `iptables` to limit the traffic to the vault instances.
+```bash
+# Allow outbound connections to server IP 192.168.1.100
+sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.100 -j ACCEPT
 
-**Please note that the scripts we provide are merely examples of what your configuration might look like and are NOT intended for use in production environments.**
+# Allow outbound connections to server IP 192.168.1.101
+sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.101 -j ACCEPT
+
+# Drop all other outbound connections
+sudo iptables -I DOCKER-USER -o eth0 -j DROP
+```
+**Please make sure to replace these IPs with the addresses of your actual vault instances.**"
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---

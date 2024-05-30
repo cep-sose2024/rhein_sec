@@ -210,7 +210,7 @@ EOF
     # Start the executable server with the --UseSwagger argument
     echo "Starting the executable server..."
     cd backend_release
-    nohup ./backend --UseSwagger > backendoutput.txt 2>&1 & # Start the executable server in the background and redirect its output to 'backendoutput.txt'
+    nohup ./backend --UseSwagger > backendoutput.txt 2>&1 & echo $! > backend_PID
 fi
 
 # Print the PID of the Vault server in red at the end of the script
