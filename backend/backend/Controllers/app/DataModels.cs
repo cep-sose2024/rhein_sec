@@ -61,11 +61,7 @@ public class DataModel
     /// Gets or sets the keys.
     /// </summary>
     [JsonProperty("keys")] public List<KeyModel> Keys { get; set; }
-
-    /// <summary>
-    /// Gets or sets the signatures.
-    /// </summary>
-    [JsonProperty("signatures")] public List<SignatureModel> Signatures { get; set; }
+    
 
     /// <summary>
     /// Converts the data model to a JObject.
@@ -75,7 +71,6 @@ public class DataModel
     {
         var data = new JObject();
         data["keys"] = JArray.FromObject(Keys);
-        data["signatures"] = JArray.FromObject(Signatures);
         return data;
     }
 }
@@ -116,28 +111,3 @@ public class KeyModel
     [JsonProperty("length")] public int Length { get; set; }
 }
 
-// <summary>
-/// Represents a model for a signature.
-/// </summary>
-public class SignatureModel
-{
-    /// <summary>
-    /// Gets or sets the id.
-    /// </summary>
-    public string Id { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the key id.
-    /// </summary>
-    public string KeyId { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the hashing algorithm.
-    /// </summary>
-    public string HashingAlg { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the signature.
-    /// </summary>
-    public string Signature { get; set; }
-}

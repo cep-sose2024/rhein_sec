@@ -52,17 +52,13 @@ public class apidemo : ControllerBase
             token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
                 _vaultCon._tokens[i], user_token);
 
-        // Create a new JsonObject instead of JObject
         var dataToSave = new JsonObject
         {
-            ["keys"] = new JsonArray(), // Use JsonArray instead of JArray
-            ["signatures"] = new JsonArray()
+            ["keys"] = new JsonArray()
         };
 
-        // Serialize the JsonObject to a string
         var jsonString = dataToSave.ToString();
 
-        // Assuming PutSecret has been refactored to accept a string or JsonElement
         await PutSecret(user_token, JsonDocument.Parse(jsonString).RootElement);
 
         return Ok(token);
@@ -90,7 +86,6 @@ public class apidemo : ControllerBase
         var newToken = "";
         var jsonData = secretModel.Data;
 
-        // Serialize the data to a JSON string and parse it to a JsonElement
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var jsonString = JsonSerializer.Serialize(jsonData, options);
         var jsonElement = JsonDocument.Parse(jsonString).RootElement;
@@ -103,7 +98,7 @@ public class apidemo : ControllerBase
             if (validationResult != null) return validationResult;
 
 
-            ret = await PutSecret(oldToken, jsonElement); // Assuming PutSecret accepts a JsonElement
+            ret = await PutSecret(oldToken, jsonElement); 
 
             if (ret > 199 && ret < 300)
             {
@@ -200,7 +195,6 @@ public class apidemo : ControllerBase
             var dataToSave = new JsonObject
             {
                 ["keys"] = new JsonArray(),
-                ["signatures"] = new JsonArray()
             };
 
             var jsonString = dataToSave.ToString();

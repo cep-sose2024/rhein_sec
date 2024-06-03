@@ -203,7 +203,7 @@ sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.101 -j ACCEPT
 # Drop all other outbound connections
 sudo iptables -I DOCKER-USER -o eth0 -j DROP
 ```
-**Please make sure to replace these IPs with the addresses of your actual vault instances.**"
+**Please make sure to replace these IPs with the addresses of your actual vault instances.**
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
