@@ -23,14 +23,17 @@ public class KeyPairModel
     /// Gets or sets the token.
     /// </summary>
     public string Token { get; set; }
+
     /// <summary>
     /// Gets or sets the name.
     /// </summary>
     public string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
     public string Type { get; set; }
+
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
@@ -46,6 +49,7 @@ public class SecretModel
     /// Gets or sets the token.
     /// </summary>
     public string Token { get; set; }
+
     /// <summary>
     /// Gets or sets the data.
     /// </summary>
@@ -60,8 +64,8 @@ public class DataModel
     /// <summary>
     /// Gets or sets the keys.
     /// </summary>
-    [JsonProperty("keys")] public List<KeyModel> Keys { get; set; }
-    
+    [JsonProperty("keys")]
+    public List<KeyModel> Keys { get; set; }
 
     /// <summary>
     /// Converts the data model to a JObject.
@@ -83,31 +87,36 @@ public class KeyModel
     /// <summary>
     /// Gets or sets the id.
     /// </summary>
-    [JsonProperty("id")] public string Id { get; set; }
+    [JsonProperty("id")]
+    public string Id { get; set; }
 
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")]
+    public string Type { get; set; }
 
     /// <summary>
     /// Gets or sets the public key.
     /// </summary>
-    [JsonProperty("publickey")] public string PublicKey { get; set; }
+    [JsonProperty("publickey")]
+    public string PublicKey { get; set; }
 
     /// <summary>
     /// Gets or sets the private key.
     /// </summary>
-    [JsonProperty("privatekey")] public string PrivateKey { get; set; }
+    [JsonProperty("privatekey")]
+    public string PrivateKey { get; set; }
 
     /// <summary>
     /// Gets or sets the curve.
     /// </summary>
-    [JsonProperty("curve")] public string Curve { get; set; }
+    [JsonProperty("curve")]
+    public string Curve { get; set; }
 
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
-    [JsonProperty("length")] public int Length { get; set; }
+    [JsonProperty("length")]
+    public int Length { get; set; }
 }
-

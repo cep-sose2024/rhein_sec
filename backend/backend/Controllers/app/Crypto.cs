@@ -1,17 +1,17 @@
 using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 
 /// <summary>
 /// Provides methods for generating and managing cryptographic keys.
 /// </summary>
 /// <remarks>
-/// This class includes methods for generating X25519, Ed25519, and RSA key pairs, 
+/// This class includes methods for generating X25519, Ed25519, and RSA key pairs,
 /// as well as methods for converting these keys to JSON objects and PEM formatted strings.
 /// </remarks>
 public class Crypto
@@ -28,8 +28,12 @@ public class Crypto
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
 
-        var privateKey = Convert.ToBase64String(((X25519PrivateKeyParameters)keyPair.Private).GetEncoded());
-        var publicKey = Convert.ToBase64String(((X25519PublicKeyParameters)keyPair.Public).GetEncoded());
+        var privateKey = Convert.ToBase64String(
+            ((X25519PrivateKeyParameters)keyPair.Private).GetEncoded()
+        );
+        var publicKey = Convert.ToBase64String(
+            ((X25519PublicKeyParameters)keyPair.Public).GetEncoded()
+        );
 
         return (privateKey, publicKey);
     }
@@ -46,8 +50,12 @@ public class Crypto
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
 
-        var privateKey = Convert.ToBase64String(((Ed25519PrivateKeyParameters)keyPair.Private).GetEncoded());
-        var publicKey = Convert.ToBase64String(((Ed25519PublicKeyParameters)keyPair.Public).GetEncoded());
+        var privateKey = Convert.ToBase64String(
+            ((Ed25519PrivateKeyParameters)keyPair.Private).GetEncoded()
+        );
+        var publicKey = Convert.ToBase64String(
+            ((Ed25519PublicKeyParameters)keyPair.Public).GetEncoded()
+        );
 
         return (privateKey, publicKey);
     }
@@ -128,8 +136,14 @@ public class Crypto
     /// <param name="privateKey">The private key of the key pair.</param>
     /// <param name="length">The size of the key in bits.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
-    private static JObject MakeKeyJson(string name, string alg, string curve, string publicKey, string privateKey,
-        int length)
+    private static JObject MakeKeyJson(
+        string name,
+        string alg,
+        string curve,
+        string publicKey,
+        string privateKey,
+        int length
+    )
     {
         var keyJson = new JObject();
 
@@ -140,7 +154,8 @@ public class Crypto
         keyJson["length"] = length;
         keyJson["curve"] = null;
 
-        if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa") keyJson["curve"] = curve;
+        if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
+            keyJson["curve"] = curve;
 
         return keyJson;
     }

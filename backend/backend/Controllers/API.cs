@@ -1,9 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Mvc;
 using backend.Controllers.example;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
-
 
 namespace backend.Controllers;
 
@@ -44,18 +43,20 @@ public class apidemo : ControllerBase
         var tokenExists = true;
         while (tokenExists)
         {
-            if (tokenExists) user_token = VaultCon.GenerateToken(80);
+            if (tokenExists)
+                user_token = VaultCon.GenerateToken(80);
             tokenExists = await _vaultCon.checkToken(user_token);
         }
 
         for (var i = 0; i < _vaultCon._tokens.Count; i++)
-            token = await _vaultCon.CreateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
-                _vaultCon._tokens[i], user_token);
+            token = await _vaultCon.CreateUserToken(
+                _vaultCon._defpolicyname,
+                _vaultCon._addresses[i],
+                _vaultCon._tokens[i],
+                user_token
+            );
 
-        var dataToSave = new JsonObject
-        {
-            ["keys"] = new JsonArray()
-        };
+        var dataToSave = new JsonObject { ["keys"] = new JsonArray() };
 
         var jsonString = dataToSave.ToString();
 
@@ -95,10 +96,10 @@ public class apidemo : ControllerBase
         if (tokenExists)
         {
             var validationResult = ValidateJsonData(jsonElement);
-            if (validationResult != null) return validationResult;
+            if (validationResult != null)
+                return validationResult;
 
-
-            ret = await PutSecret(oldToken, jsonElement); 
+            ret = await PutSecret(oldToken, jsonElement);
 
             if (ret > 199 && ret < 300)
             {
@@ -109,11 +110,7 @@ public class apidemo : ControllerBase
                 var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
                 Console.WriteLine($"Time taken: {elapsedMilliseconds} ms");
-                var returnObject = new
-                {
-                    returnCode = ret,
-                    newToken
-                };
+                var returnObject = new { returnCode = ret, newToken };
                 return Ok(returnObject);
             }
             else
@@ -150,9 +147,11 @@ public class apidemo : ControllerBase
                 {
                     ret = secret;
                 }
-                else if (ret is JObject && secret is JObject && JToken.DeepEquals((JObject)ret, (JObject)secret))
-                {
-                }
+                else if (
+                    ret is JObject
+                    && secret is JObject
+                    && JToken.DeepEquals((JObject)ret, (JObject)secret)
+                ) { }
                 else if (!ret.Equals(secret))
                 {
                     return StatusCode(500, "Internal server Error");
@@ -161,11 +160,7 @@ public class apidemo : ControllerBase
 
             var retJObject = JObject.Parse(ret.ToString());
             newToken = await RotateToken(oldToken);
-            var returnObject = new
-            {
-                data = retJObject.GetValue("data"),
-                newToken
-            };
+            var returnObject = new { data = retJObject.GetValue("data"), newToken };
             return Ok(returnObject);
         }
 
@@ -192,10 +187,7 @@ public class apidemo : ControllerBase
             for (var i = 0; i < _vaultCon._addresses.Count; i++)
                 ret = await _vaultCon.DeleteSecrets(oldToken, _vaultCon._addresses[i]);
 
-            var dataToSave = new JsonObject
-            {
-                ["keys"] = new JsonArray(),
-            };
+            var dataToSave = new JsonObject { ["keys"] = new JsonArray(), };
 
             var jsonString = dataToSave.ToString();
             await PutSecret(oldToken, JsonDocument.Parse(jsonString).RootElement);
@@ -229,7 +221,7 @@ public class apidemo : ControllerBase
         var oldToken = keyPairModel.Token;
         var tokenExists = await _vaultCon.checkToken(oldToken);
         object ret = null;
-        
+
         if (tokenExists)
         {
             for (var i = 0; i < _vaultCon._addresses.Count; i++)
@@ -239,9 +231,11 @@ public class apidemo : ControllerBase
                 {
                     ret = secret;
                 }
-                else if (ret is JObject && secret is JObject && JToken.DeepEquals((JObject)ret, (JObject)secret))
-                {
-                }
+                else if (
+                    ret is JObject
+                    && secret is JObject
+                    && JToken.DeepEquals((JObject)ret, (JObject)secret)
+                ) { }
                 else if (!ret.Equals(secret))
                 {
                     return StatusCode(500, "Internal server Error");
@@ -252,7 +246,9 @@ public class apidemo : ControllerBase
             var retJObject = JObject.Parse(ret.ToString());
             var keysArray = (JArray)retJObject["data"]["keys"];
             var existingKey = keysArray.FirstOrDefault(obj =>
-                obj["id"] != null && obj["id"].Value<string>().ToLower() == keyPairModel.Name.ToLower());
+                obj["id"] != null
+                && obj["id"].Value<string>().ToLower() == keyPairModel.Name.ToLower()
+            );
             var newToken = "";
             if (existingKey != null)
             {
@@ -265,10 +261,28 @@ public class apidemo : ControllerBase
             }
 
             var keyPair = new JObject();
-            var validKeyLengths = new List<int> { 128, 192, 256, 512, 1024, 2048, 3072, 4096, 8192 };
-            if (keyPairModel.Length.HasValue && !validKeyLengths.Contains(keyPairModel.Length.Value))
+            var validKeyLengths = new List<int>
             {
-                return BadRequest(new { message = $"Invalid key length. Supported lengths are {string.Join(", ", validKeyLengths)}." });
+                128,
+                192,
+                256,
+                512,
+                1024,
+                2048,
+                3072,
+                4096,
+                8192
+            };
+            if (
+                keyPairModel.Length.HasValue && !validKeyLengths.Contains(keyPairModel.Length.Value)
+            )
+            {
+                return BadRequest(
+                    new
+                    {
+                        message = $"Invalid key length. Supported lengths are {string.Join(", ", validKeyLengths)}."
+                    }
+                );
             }
             if (keyPairModel.Type.ToLower().Equals("ecdh"))
             {
@@ -287,8 +301,7 @@ public class apidemo : ControllerBase
             {
                 var errorResponse = new
                 {
-                    message =
-                        "Invalid key type. Supported types are ecdh, ecdsa, rsa, please provide a valid key type in the request body via the 'type' field."
+                    message = "Invalid key type. Supported types are ecdh, ecdsa, rsa, please provide a valid key type in the request body via the 'type' field."
                 };
                 return BadRequest(errorResponse);
             }
@@ -304,14 +317,13 @@ public class apidemo : ControllerBase
                 retJObject.Add("data", data);
             }
 
-            var putRetCode = await PutSecret(oldToken, JsonDocument.Parse(retJObject["data"].ToString()).RootElement);
+            var putRetCode = await PutSecret(
+                oldToken,
+                JsonDocument.Parse(retJObject["data"].ToString()).RootElement
+            );
             Console.WriteLine("CODE ::: " + putRetCode);
             newToken = await RotateToken(oldToken);
-            var returnObject = new
-            {
-                data = retJObject.GetValue("data"),
-                newToken
-            };
+            var returnObject = new { data = retJObject.GetValue("data"), newToken };
 
             return Ok(returnObject);
         }
@@ -324,7 +336,7 @@ public class apidemo : ControllerBase
     /// </summary>
     /// <param name="token">The token associated with the secret.</param>
     /// <param name="data">The secret data to be stored in the vault, represented as a JsonElement.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an integer that represents the status of the operation. 
+    /// <returns>A task that represents the asynchronous operation. The task result contains an integer that represents the status of the operation.
     /// If the token does not exist, the method returns 0. If the token exists, the method returns the result of the CreateSecret operation.</returns>
     private async Task<int> PutSecret(string token, JsonElement data)
     {
@@ -353,7 +365,8 @@ public class apidemo : ControllerBase
         {
             var dataObject = secret["data"] as JObject;
             var containsKeysField = dataObject?.ContainsKey("keys") ?? false;
-            if (containsKeysField) return true;
+            if (containsKeysField)
+                return true;
         }
 
         return false;
@@ -368,8 +381,13 @@ public class apidemo : ControllerBase
     {
         var newToken = VaultCon.GenerateToken(80);
         for (var i = 0; i < _vaultCon._addresses.Count; i++)
-            newToken = await _vaultCon.RotateUserToken(_vaultCon._defpolicyname, _vaultCon._addresses[i],
-                _vaultCon._tokens[i], userToken, newToken);
+            newToken = await _vaultCon.RotateUserToken(
+                _vaultCon._defpolicyname,
+                _vaultCon._addresses[i],
+                _vaultCon._tokens[i],
+                userToken,
+                newToken
+            );
 
         return newToken;
     }
@@ -378,20 +396,23 @@ public class apidemo : ControllerBase
     /// Validates the JSON data for the keys.
     /// </summary>
     /// <param name="jsonData">The JSON data to be validated, represented as a JsonElement.</param>
-    /// <returns>An IActionResult that represents the result of the validation. 
-    /// If the validation is successful, the method returns null. 
+    /// <returns>An IActionResult that represents the result of the validation.
+    /// If the validation is successful, the method returns null.
     /// If the validation fails, the method returns a BadRequestObjectResult with an error message.</returns>
     private IActionResult? ValidateJsonData(JsonElement jsonData)
     {
-        if (jsonData.ValueKind == JsonValueKind.Undefined || jsonData.ValueKind == JsonValueKind.Null)
+        if (
+            jsonData.ValueKind == JsonValueKind.Undefined
+            || jsonData.ValueKind == JsonValueKind.Null
+        )
             return BadRequest("Data field is missing.");
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonData.GetRawText(), options);
+        var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+            jsonData.GetRawText(),
+            options
+        );
         if (data == null)
             return BadRequest("Invalid JSON data.");
 
@@ -400,9 +421,11 @@ public class apidemo : ControllerBase
 
         Console.WriteLine("Lower case data: " + JsonSerializer.Serialize(lowerCaseData));
 
-        if (!lowerCaseData.TryGetValue("keys", out var keysElement) || keysElement.ValueKind != JsonValueKind.Array)
+        if (
+            !lowerCaseData.TryGetValue("keys", out var keysElement)
+            || keysElement.ValueKind != JsonValueKind.Array
+        )
             return BadRequest("Keys field is missing or is not an array.");
-
 
         var ids = new HashSet<string>();
         var validLengths = new HashSet<int> { 1024, 2048, 3072, 4096 };
@@ -414,9 +437,15 @@ public class apidemo : ControllerBase
                 continue;
 
             var id = key.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
-            var type = key.TryGetValue("type", out var typeElement) ? typeElement.GetString() : null;
-            var curve = key.TryGetValue("curve", out var curveElement) ? curveElement.GetString() : null;
-            var length = key.TryGetValue("length", out var lengthElement) ? lengthElement.GetInt32() : (int?)null;
+            var type = key.TryGetValue("type", out var typeElement)
+                ? typeElement.GetString()
+                : null;
+            var curve = key.TryGetValue("curve", out var curveElement)
+                ? curveElement.GetString()
+                : null;
+            var length = key.TryGetValue("length", out var lengthElement)
+                ? lengthElement.GetInt32()
+                : (int?)null;
             var publicKey = key.TryGetValue("publickey", out var publicKeyElement)
                 ? publicKeyElement.GetString()
                 : null;
@@ -433,13 +462,17 @@ public class apidemo : ControllerBase
                 return BadRequest($"Duplicate key id found: {id}");
 
             if (type != "ecdh" && type != "ecdsa" && type != "rsa")
-                return BadRequest($"Invalid key type: {type}. Supported types are ecdh, ecdsa, rsa.");
+                return BadRequest(
+                    $"Invalid key type: {type}. Supported types are ecdh, ecdsa, rsa."
+                );
 
             if ((type == "ecdh" || type == "ecdsa") && string.IsNullOrWhiteSpace(curve))
                 return BadRequest("Curve is required for key type: {type}");
 
             if (type == "rsa" && (length == null || !validLengths.Contains(length.Value)))
-                return BadRequest("Invalid length for RSA key type. Supported lengths are 1024, 2048, 3072, 4096.");
+                return BadRequest(
+                    "Invalid length for RSA key type. Supported lengths are 1024, 2048, 3072, 4096."
+                );
         }
 
         return null;
@@ -456,10 +489,13 @@ public class apidemo : ControllerBase
         foreach (var pair in data)
             if (pair.Value.ValueKind == JsonValueKind.Object)
             {
-                var lowerCaseSubData =
-                    ConvertKeysToLower(pair.Value.EnumerateObject().ToDictionary(kvp => kvp.Name, kvp => kvp.Value));
-                lowerCaseData.Add(pair.Key.ToLower(),
-                    JsonDocument.Parse(JsonSerializer.Serialize(lowerCaseSubData)).RootElement);
+                var lowerCaseSubData = ConvertKeysToLower(
+                    pair.Value.EnumerateObject().ToDictionary(kvp => kvp.Name, kvp => kvp.Value)
+                );
+                lowerCaseData.Add(
+                    pair.Key.ToLower(),
+                    JsonDocument.Parse(JsonSerializer.Serialize(lowerCaseSubData)).RootElement
+                );
             }
             else if (pair.Value.ValueKind == JsonValueKind.Array)
             {
@@ -467,17 +503,24 @@ public class apidemo : ControllerBase
                 foreach (var item in pair.Value.EnumerateArray())
                     if (item.ValueKind == JsonValueKind.Object)
                     {
-                        var lowerCaseSubData =
-                            ConvertKeysToLower(item.EnumerateObject().ToDictionary(kvp => kvp.Name, kvp => kvp.Value));
-                        lowerCaseArray.Add(JsonDocument.Parse(JsonSerializer.Serialize(lowerCaseSubData)).RootElement);
+                        var lowerCaseSubData = ConvertKeysToLower(
+                            item.EnumerateObject().ToDictionary(kvp => kvp.Name, kvp => kvp.Value)
+                        );
+                        lowerCaseArray.Add(
+                            JsonDocument
+                                .Parse(JsonSerializer.Serialize(lowerCaseSubData))
+                                .RootElement
+                        );
                     }
                     else
                     {
                         lowerCaseArray.Add(item);
                     }
 
-                lowerCaseData.Add(pair.Key.ToLower(),
-                    JsonDocument.Parse(JsonSerializer.Serialize(lowerCaseArray)).RootElement);
+                lowerCaseData.Add(
+                    pair.Key.ToLower(),
+                    JsonDocument.Parse(JsonSerializer.Serialize(lowerCaseArray)).RootElement
+                );
             }
             else
             {

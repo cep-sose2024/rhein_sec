@@ -14,3 +14,4 @@ backend/backend.tar.gz
 backend/backend/Controllers.zip
 backend/backend/logtest.log
 backend/backend/certs/*
+backend/backend/.config/*

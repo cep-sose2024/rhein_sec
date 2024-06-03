@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
-
 namespace backend.Controllers.example;
 
 /// <summary>
@@ -40,16 +39,17 @@ public class VaultCon
     /// <param name="address">The Vault server address where the policy will be created.</param>
     /// <param name="token">The Vault token used for authentication.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the name of the created policy.</returns>
-    public async Task<string> CreateUserPolicy(string policyName, string policyPermissions, string address,
-        string token)
+    public async Task<string> CreateUserPolicy(
+        string policyName,
+        string policyPermissions,
+        string address,
+        string token
+    )
     {
         var url = $"{address}/v1/sys/policies/acl/{policyName}";
         var policy = $"path \"cubbyhole/secrets\" {{ {policyPermissions} }}";
 
-        var json = new JObject
-        {
-            ["policy"] = policy
-        };
+        var json = new JObject { ["policy"] = policy };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -67,7 +67,12 @@ public class VaultCon
     /// <param name="token">The Vault token used for authentication.</param>
     /// <param name="userToken">The user token to be created.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the created user token.</returns>
-    public async Task<string> CreateUserToken(string policy, string address, string token, string userToken)
+    public async Task<string> CreateUserToken(
+        string policy,
+        string address,
+        string token,
+        string userToken
+    )
     {
         var url = $"{address}/v1/auth/token/create";
 
@@ -183,7 +188,8 @@ public class VaultCon
         foreach (var jsonObject in jsonArray)
         {
             var address = (string)jsonObject["address"];
-            if (address.EndsWith("/")) address = address.Remove(address.Length - 1);
+            if (address.EndsWith("/"))
+                address = address.Remove(address.Length - 1);
             var token = (string)jsonObject["token"];
             _addresses.Add(address);
             _tokens.Add(token);
@@ -282,13 +288,20 @@ public class VaultCon
     /// <param name="userToken">The user token to be rotated.</param>
     /// <param name="newToken">The new token to be created.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the new user token.</returns>
-    public async Task<string> RotateUserToken(string policy, string address, string token, string userToken,
-        string newToken)
+    public async Task<string> RotateUserToken(
+        string policy,
+        string address,
+        string token,
+        string userToken,
+        string newToken
+    )
     {
         //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
         var secretsString = secretsObject.ToString();
-        var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(secretsString);
+        var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+            secretsString
+        );
         JsonElement secrets;
         if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))
         {
