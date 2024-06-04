@@ -169,7 +169,7 @@ The current capabilities are limited since the crypto layer hasn’t been implem
 
 Assuming you have already downloaded the backend server executable from the releases and configured the nksConfig.json file, you can run it via:
 ```
-./backend <--UseSwagger> -o <your_log_file> -port <>
+./backend <--UseSwagger> -o <your_log_file> -port <> -insecure
 ```
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
