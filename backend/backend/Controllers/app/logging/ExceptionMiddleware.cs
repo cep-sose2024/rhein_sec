@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace backend.Controllers.example.logging;
+namespace backend.Controllers.app.logging;
 
 /// <summary>
 /// Middleware for handling exceptions and providing a custom response.

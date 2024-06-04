@@ -1,9 +1,10 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using backend.Controllers.example.logging;
+using backend.Controllers.app.logging;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
@@ -14,6 +15,9 @@ using Org.BouncyCastle.Security;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()

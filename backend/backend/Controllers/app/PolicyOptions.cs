@@ -1,4 +1,4 @@
-namespace backend.Controllers.example;
+namespace backend.Controllers.app;
 
 /// <summary>
 /// Provides predefined policy options for Vault capabilities.

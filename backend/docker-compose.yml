@@ -1,0 +1,9 @@
+﻿services:
+  backend:
+    image: backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    volumes:
+      - ./backend/certs:/app/certs
+      - ./backend/config:/app

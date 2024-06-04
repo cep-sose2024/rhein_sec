@@ -1,12 +1,11 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using backend.Controllers.example;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace backend.Controllers.example;
+namespace backend.Controllers.app;
 
 /// <summary>
 /// The VaultCon class is responsible for managing interactions with the Vault service.
@@ -14,8 +13,7 @@ namespace backend.Controllers.example;
 /// </summary>
 public class VaultCon
 {
-    private static readonly HttpClient client = new();
-
+    private static readonly HttpClient client = HttpClientHelper.CreateClient();
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
@@ -182,19 +180,31 @@ public class VaultCon
     public void ReadConfig()
     {
         var jsonFilePath = "nksconfig.json";
-        var jsonText = File.ReadAllText(jsonFilePath);
-        var jsonArray = JArray.Parse(jsonText);
-
-        foreach (var jsonObject in jsonArray)
+        try
         {
-            var address = (string)jsonObject["address"];
-            if (address.EndsWith("/"))
-                address = address.Remove(address.Length - 1);
-            var token = (string)jsonObject["token"];
-            _addresses.Add(address);
-            _tokens.Add(token);
+            var jsonText = File.ReadAllText(jsonFilePath);
+            var jsonArray = JArray.Parse(jsonText);
+
+            foreach (var jsonObject in jsonArray)
+            {
+                var address = (string)jsonObject["address"];
+                if (address.EndsWith("/"))
+                    address = address.Remove(address.Length - 1);
+                var token = (string)jsonObject["token"];
+                _addresses.Add(address);
+                _tokens.Add(token);
+            }
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.Error.WriteLine("Error: The nksconfig.json file was not found: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("An error occurred: " + ex.Message);
         }
     }
+
 
     /// <summary>
     /// Generates a random token of the specified length.
