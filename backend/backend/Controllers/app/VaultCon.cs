@@ -205,7 +205,6 @@ public class VaultCon
         }
     }
 
-
     /// <summary>
     /// Generates a random token of the specified length.
     /// </summary>

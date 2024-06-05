@@ -45,7 +45,6 @@ public class Crypto
     /// <returns>A tuple where the first item is the private key and the second item is the public key. Both keys are Base64 encoded strings.</returns>
     private static (string, string) GenerateEd25519KeyPair(int keySize = 256)
     {
-        var generator2 = new Ed25519KeyPairGenerator();
         var generator = new Ed25519KeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
@@ -58,6 +57,18 @@ public class Crypto
         );
 
         return (privateKey, publicKey);
+    }
+
+    public static string GenerateSymmetricKey(int keySize = 256)
+    {
+        var random = new SecureRandom();
+        var generator = new CipherKeyGenerator();
+        generator.Init(new KeyGenerationParameters(random, keySize));
+
+        var keyBytes = generator.GenerateKey();
+        var base64Key = Convert.ToBase64String(keyBytes);
+
+        return base64Key;
     }
 
     /// <summary>
@@ -99,7 +110,7 @@ public class Crypto
     public static JObject GetxX25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateX25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize, null);
     }
 
     /// <summary>
@@ -111,7 +122,7 @@ public class Crypto
     public static JObject GetEd25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateEd25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize, null);
     }
 
     /// <summary>
@@ -123,7 +134,15 @@ public class Crypto
     public static JObject GetRsaKeyPair(string name, int keySize = 2048)
     {
         var (privateKey, publicKey) = GenerateRsaKeyPair(keySize);
-        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize, null);
+    }
+
+    public static JObject GetAesKey(string name, SymmetricModes alg, int keySize = 256)
+    {
+        if (keySize != 128 && keySize != 192 && keySize != 256)
+            return null;
+        var b46Key = GenerateSymmetricKey(keySize);
+        return MakeKeyJson(name, "AES", null, null, b46Key, keySize, alg.ToString());
     }
 
     /// <summary>
@@ -142,7 +161,8 @@ public class Crypto
         string curve,
         string publicKey,
         string privateKey,
-        int length
+        int length,
+        string cipherType
     )
     {
         var keyJson = new JObject();
@@ -153,10 +173,43 @@ public class Crypto
         keyJson["privateKey"] = privateKey;
         keyJson["length"] = length;
         keyJson["curve"] = null;
+        keyJson["cipherType"] = null;
 
         if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
             keyJson["curve"] = curve;
+        if (alg.ToLower() == "aes")
+            keyJson["cipherType"] = cipherType;
 
         return keyJson;
+    }
+
+    public enum SymmetricModes
+    {
+        Gcm,
+        Ccm,
+        Ecb,
+        Cbc,
+        Cfb,
+        Ofb,
+        Ctr
+    }
+
+    public enum RsaKeyLengths
+    {
+        L128 = 128,
+        L192 = 192,
+        L256 = 256,
+        L512 = 512,
+        L1024 = 1024,
+        L2048 = 2048,
+        L3072 = 3072,
+        L4096 = 4096,
+    }
+
+    public enum AesKeyLength
+    {
+        L128 = 128,
+        L192 = 192,
+        L256 = 256,
     }
 }

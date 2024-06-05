@@ -5,12 +5,13 @@ public static class HttpClientHelper
     static HttpClientHelper()
     {
         Handler = new HttpClientHandler();
-        var insecure = Environment.GetCommandLineArgs().Any(arg => arg.Equals("-insecure", StringComparison.OrdinalIgnoreCase));
+        var insecure = Environment
+            .GetCommandLineArgs()
+            .Any(arg => arg.Equals("-insecure", StringComparison.OrdinalIgnoreCase));
 
         if (insecure)
-        {
-            Handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-        }
+            Handler.ServerCertificateCustomValidationCallback =
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
     }
 
     public static HttpClient CreateClient()

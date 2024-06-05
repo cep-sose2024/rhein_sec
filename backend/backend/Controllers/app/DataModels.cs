@@ -35,6 +35,11 @@ public class KeyPairModel
     public string Type { get; set; }
 
     /// <summary>
+    /// Gets or sets the cipherType.
+    /// </summary>
+    public String CipherType { get; set; }
+
+    /// <summary>
     /// Gets or sets the length.
     /// </summary>
     public int? Length { get; set; }
@@ -119,4 +124,10 @@ public class KeyModel
     /// </summary>
     [JsonProperty("length")]
     public int Length { get; set; }
+
+    /// <summary>
+    /// Gets or sets the cipher type.
+    /// </summary>
+    [JsonProperty("ciphertype")]
+    public string CipherType { get; set; }
 }

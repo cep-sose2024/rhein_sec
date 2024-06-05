@@ -52,7 +52,9 @@ To build the Docker image, use the following command:
 ```bash
 docker build -t rheinsec/network-key-storage:latest .
 ```
+
 in the same directory as the Dockerfile.
+
 ### Optional Arguments
 
 The backend can be run with the following optional arguments:

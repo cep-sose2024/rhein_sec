@@ -16,8 +16,10 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+ServicePointManager.ServerCertificateValidationCallback = delegate
+{
+    return true;
+};
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
@@ -144,7 +146,6 @@ var app = builder.Build();
 app.Use(
     async (context, next) =>
     {
-        context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'");
         context.Response.Headers.Add(
             "Strict-Transport-Security",
             "max-age=31536000; includeSubDomains"
@@ -206,9 +207,7 @@ app.Run();
 static void GenerateCertificatesIfNotExist(string certPath)
 {
     if (!Directory.Exists(certPath))
-    {
         Directory.CreateDirectory(certPath);
-    }
 
     var keyPath = Path.Combine(certPath, "key.key");
     var certFilePath = Path.Combine(certPath, "cert.crt");
