@@ -167,13 +167,13 @@ public class Crypto
     {
         var keyJson = new JObject();
 
-        keyJson["id"] = name;
-        keyJson["type"] = alg;
-        keyJson["publicKey"] = publicKey;
-        keyJson["privateKey"] = privateKey;
+        keyJson["id"] = name ?? "";
+        keyJson["type"] = alg ?? "";
+        keyJson["publicKey"] = publicKey ?? "";
+        keyJson["privateKey"] = privateKey ?? "";
         keyJson["length"] = length;
-        keyJson["curve"] = null;
-        keyJson["cipherType"] = null;
+        keyJson["curve"] = curve ?? "";
+        keyJson["cipherType"] = cipherType ?? "";
 
         if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
             keyJson["curve"] = curve;
@@ -203,13 +203,13 @@ public class Crypto
         L1024 = 1024,
         L2048 = 2048,
         L3072 = 3072,
-        L4096 = 4096,
+        L4096 = 4096
     }
 
     public enum AesKeyLength
     {
         L128 = 128,
         L192 = 192,
-        L256 = 256,
+        L256 = 256
     }
 }

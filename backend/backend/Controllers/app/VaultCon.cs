@@ -322,19 +322,10 @@ public class VaultCon
             secrets = JsonDocument.Parse("{}").RootElement;
         }
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-        //create new token
         await CreateUserToken(policy, address, token, newToken);
-        //store secret from variable with new token
         await CreateSecret(newToken, secrets.ToString(), address);
-        //delete old secret in old token
         await DeleteToken(token, address, userToken);
-        //return new token
-        stopwatch.Stop();
-        var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
-        Console.WriteLine($"Time taken222: {elapsedMilliseconds} ms");
         return newToken;
     }
 }

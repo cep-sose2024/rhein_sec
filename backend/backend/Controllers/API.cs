@@ -245,7 +245,7 @@ public class apidemo : ControllerBase
 
             Console.WriteLine(ret.ToString());
             var retJObject = JObject.Parse(ret.ToString());
-            var keysArray = (JArray)retJObject["data"]["keys"]; //TODO add ignore case code 
+            var keysArray = (JArray)retJObject["data"]["keys"]; //TODO add ignore case code
 
             var existingKey = keysArray.FirstOrDefault(obj =>
                 obj is JObject jObj
@@ -278,7 +278,11 @@ public class apidemo : ControllerBase
                 if (
                     !Enum.GetNames(typeof(Crypto.SymmetricModes))
                         .Any(mode => mode.ToLower() == keyPairModel.CipherType.ToLower())
-                    || !Enum.TryParse(keyPairModel.CipherType, true, out Crypto.SymmetricModes symmetricMode)
+                    || !Enum.TryParse(
+                        keyPairModel.CipherType,
+                        true,
+                        out Crypto.SymmetricModes symmetricMode
+                    )
                 )
                 {
                     var availableModes = string.Join(
@@ -432,108 +436,122 @@ public class apidemo : ControllerBase
     /// <returns>An IActionResult that represents the result of the validation.
     /// If the validation is successful, the method returns null.
     /// If the validation fails, the method returns a BadRequestObjectResult with an error message.</returns>
-private IActionResult? ValidateJsonData(JsonElement jsonData)
-{
-    if (
-        jsonData.ValueKind == JsonValueKind.Undefined
-        || jsonData.ValueKind == JsonValueKind.Null
-    )
-        return BadRequest("Data field is missing.");
-
-    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
-    var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-        jsonData.GetRawText(),
-        options
-    );
-    if (data == null)
-        return BadRequest("Invalid JSON data.");
-
-    var lowerCaseData = ConvertKeysToLower(data);
-
-    if (
-        !lowerCaseData.TryGetValue("keys", out var keysElement)
-        || keysElement.ValueKind != JsonValueKind.Array
-    )
-        return BadRequest("Keys field is missing or is not an array.");
-
-    var ids = new HashSet<string>();
-
-    foreach (var keyElement in keysElement.EnumerateArray())
+    private IActionResult? ValidateJsonData(JsonElement jsonData)
     {
-        var key = keyElement.Deserialize<Dictionary<string, JsonElement>>(options);
-        if (key == null)
-            continue;
+        if (
+            jsonData.ValueKind == JsonValueKind.Undefined
+            || jsonData.ValueKind == JsonValueKind.Null
+        )
+            return BadRequest("Data field is missing.");
 
-        var id = key.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
-        var type = key.TryGetValue("type", out var typeElement)
-            ? typeElement.GetString()?.ToLower()
-            : null;
-        var curve = key.TryGetValue("curve", out var curveElement)
-            ? curveElement.GetString()
-            : null;
-        var length = key.TryGetValue("length", out var lengthElement)
-            ? lengthElement.GetInt32()
-            : (int?)null;
-        var publicKey = key.TryGetValue("publickey", out var publicKeyElement)
-            ? publicKeyElement.GetString()
-            : null;
-        var privateKey = key.TryGetValue("privatekey", out var privateKeyElement)
-            ? privateKeyElement.GetString()
-            : null;
-        
-        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(type))
-            return BadRequest("Key id or type is missing or invalid.");
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-        if (!ids.Add(id))
-            return BadRequest($"Duplicate key id found: {id}");
+        var data = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+            jsonData.GetRawText(),
+            options
+        );
+        if (data == null)
+            return BadRequest("Invalid JSON data.");
 
-        if (type != "ecdh" && type != "ecdsa" && type != "rsa" && type != "aes")
-            return BadRequest(
-                $"Invalid key type: {type}. Supported types are ecdh, ecdsa, rsa, aes."
-            );
-
-        if ((type == "ecdh" || type == "ecdsa") && string.IsNullOrWhiteSpace(curve))
-            return BadRequest("Curve is required for key type: {type}");
+        var lowerCaseData = ConvertKeysToLower(data);
 
         if (
-            type == "rsa"
-            && (
-                length == null
-                || !Enum.GetValues(typeof(Crypto.RsaKeyLengths))
-                    .Cast<int>()
-                    .Contains(length.Value)
-            )
+            !lowerCaseData.TryGetValue("keys", out var keysElement)
+            || keysElement.ValueKind != JsonValueKind.Array
         )
+            return BadRequest("Keys field is missing or is not an array.");
+
+        var ids = new HashSet<string>();
+
+        foreach (var keyElement in keysElement.EnumerateArray())
         {
-            return BadRequest(
-                new
+            var key = keyElement.Deserialize<Dictionary<string, JsonElement>>(options);
+            if (key == null)
+                continue;
+
+            var id = key.TryGetValue("id", out var idElement) ? idElement.GetString() : null;
+            var type = key.TryGetValue("type", out var typeElement)
+                ? typeElement.GetString()?.ToLower()
+                : null;
+            var curve = key.TryGetValue("curve", out var curveElement)
+                ? curveElement.GetString()
+                : null;
+            var length = key.TryGetValue("length", out var lengthElement)
+                ? lengthElement.GetInt32()
+                : (int?)null;
+            var publicKey = key.TryGetValue("publickey", out var publicKeyElement)
+                ? publicKeyElement.GetString()
+                : null;
+            var privateKey = key.TryGetValue("privatekey", out var privateKeyElement)
+                ? privateKeyElement.GetString()
+                : null;
+            var cipherType = key.TryGetValue("ciphertype", out var cipherTypeElement)
+                ? cipherTypeElement.GetString()
+                : null;
+
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(type))
+                return BadRequest("Key id or type is missing or invalid.");
+
+            if (!ids.Add(id))
+                return BadRequest($"Duplicate key id found: {id}");
+
+            if (type != "ecdh" && type != "ecdsa" && type != "rsa" && type != "aes")
+                return BadRequest(
+                    $"Invalid key type: {type}. Supported types are ecdh, ecdsa, rsa, aes."
+                );
+
+            if ((type == "ecdh" || type == "ecdsa") && string.IsNullOrWhiteSpace(curve))
+                return BadRequest("Curve is required for key type: {type}");
+
+            if (type == "rsa")
+            {
+                if (
+                    length == null
+                    || !Enum.GetValues(typeof(Crypto.RsaKeyLengths))
+                        .Cast<int>()
+                        .Contains(length.Value)
+                )
+                    return BadRequest(
+                        new
+                        {
+                            message = $"Invalid key length. Supported lengths are {string.Join(", ", Enum.GetValues(typeof(Crypto.RsaKeyLengths)).Cast<int>())}."
+                        }
+                    );
+                if (
+                    (privateKey != null && privateKey.Length > 684)
+                    || (publicKey != null && publicKey.Length > 684)
+                )
                 {
-                    message = $"Invalid key length. Supported lengths are {string.Join(", ", Enum.GetValues(typeof(Crypto.RsaKeyLengths)).Cast<int>())}."
+                    return BadRequest("The RSA key length is too long.");
                 }
-            );
+            }
+
+            if (type == "aes")
+            {
+                if (
+                    length == null
+                    || !Enum.GetValues(typeof(Crypto.AesKeyLength))
+                        .Cast<int>()
+                        .Contains(length.Value)
+                )
+                    return BadRequest(
+                        new
+                        {
+                            message = $"Invalid key length. Supported lengths are {string.Join(", ", Enum.GetValues(typeof(Crypto.AesKeyLength)).Cast<int>())}."
+                        }
+                    );
+                if (!Enum.TryParse<Crypto.SymmetricModes>(cipherType, true, out _))
+                    return BadRequest(
+                        new
+                        {
+                            message = $"Invalid cipher type. Supported types are {string.Join(", ", Enum.GetNames(typeof(Crypto.SymmetricModes)))}."
+                        }
+                    );
+            }
         }
-        if (
-            type == "aes"
-            && (
-                length == null
-                || !Enum.GetValues(typeof(Crypto.AesKeyLength))
-                    .Cast<int>()
-                    .Contains(length.Value)
-            )
-        )
-        {
-            return BadRequest(
-                new
-                {
-                    message = $"Invalid key length. Supported lengths are {string.Join(", ", Enum.GetValues(typeof(Crypto.AesKeyLength)).Cast<int>())}."
-                }
-            );
-        }
+
+        return null;
     }
-
-    return null;
-}
 
     /// <summary>
     /// Converts all keys in a JSON object to lower case.
