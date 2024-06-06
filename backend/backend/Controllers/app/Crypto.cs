@@ -1,17 +1,17 @@
 using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Pkcs;
-using Org.BouncyCastle.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 
 /// <summary>
 /// Provides methods for generating and managing cryptographic keys.
 /// </summary>
 /// <remarks>
-/// This class includes methods for generating X25519, Ed25519, and RSA key pairs, 
+/// This class includes methods for generating X25519, Ed25519, and RSA key pairs,
 /// as well as methods for converting these keys to JSON objects and PEM formatted strings.
 /// </remarks>
 public class Crypto
@@ -28,8 +28,12 @@ public class Crypto
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
 
-        var privateKey = Convert.ToBase64String(((X25519PrivateKeyParameters)keyPair.Private).GetEncoded());
-        var publicKey = Convert.ToBase64String(((X25519PublicKeyParameters)keyPair.Public).GetEncoded());
+        var privateKey = Convert.ToBase64String(
+            ((X25519PrivateKeyParameters)keyPair.Private).GetEncoded()
+        );
+        var publicKey = Convert.ToBase64String(
+            ((X25519PublicKeyParameters)keyPair.Public).GetEncoded()
+        );
 
         return (privateKey, publicKey);
     }
@@ -41,15 +45,30 @@ public class Crypto
     /// <returns>A tuple where the first item is the private key and the second item is the public key. Both keys are Base64 encoded strings.</returns>
     private static (string, string) GenerateEd25519KeyPair(int keySize = 256)
     {
-        var generator2 = new Ed25519KeyPairGenerator();
         var generator = new Ed25519KeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
 
-        var privateKey = Convert.ToBase64String(((Ed25519PrivateKeyParameters)keyPair.Private).GetEncoded());
-        var publicKey = Convert.ToBase64String(((Ed25519PublicKeyParameters)keyPair.Public).GetEncoded());
+        var privateKey = Convert.ToBase64String(
+            ((Ed25519PrivateKeyParameters)keyPair.Private).GetEncoded()
+        );
+        var publicKey = Convert.ToBase64String(
+            ((Ed25519PublicKeyParameters)keyPair.Public).GetEncoded()
+        );
 
         return (privateKey, publicKey);
+    }
+
+    public static string GenerateSymmetricKey(int keySize = 256)
+    {
+        var random = new SecureRandom();
+        var generator = new CipherKeyGenerator();
+        generator.Init(new KeyGenerationParameters(random, keySize));
+
+        var keyBytes = generator.GenerateKey();
+        var base64Key = Convert.ToBase64String(keyBytes);
+
+        return base64Key;
     }
 
     /// <summary>
@@ -91,7 +110,7 @@ public class Crypto
     public static JObject GetxX25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateX25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize, null);
     }
 
     /// <summary>
@@ -103,7 +122,7 @@ public class Crypto
     public static JObject GetEd25519KeyPair(string name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateEd25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize, null);
     }
 
     /// <summary>
@@ -115,7 +134,15 @@ public class Crypto
     public static JObject GetRsaKeyPair(string name, int keySize = 2048)
     {
         var (privateKey, publicKey) = GenerateRsaKeyPair(keySize);
-        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize);
+        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize, null);
+    }
+
+    public static JObject GetAesKey(string name, SymmetricModes alg, int keySize = 256)
+    {
+        if (keySize != 128 && keySize != 192 && keySize != 256)
+            return null;
+        var b46Key = GenerateSymmetricKey(keySize);
+        return MakeKeyJson(name, "AES", null, null, b46Key, keySize, alg.ToString());
     }
 
     /// <summary>
@@ -128,20 +155,61 @@ public class Crypto
     /// <param name="privateKey">The private key of the key pair.</param>
     /// <param name="length">The size of the key in bits.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
-    private static JObject MakeKeyJson(string name, string alg, string curve, string publicKey, string privateKey,
-        int length)
+    private static JObject MakeKeyJson(
+        string name,
+        string alg,
+        string curve,
+        string publicKey,
+        string privateKey,
+        int length,
+        string cipherType
+    )
     {
         var keyJson = new JObject();
 
-        keyJson["id"] = name;
-        keyJson["type"] = alg;
-        keyJson["publicKey"] = publicKey;
-        keyJson["privateKey"] = privateKey;
+        keyJson["id"] = name ?? "";
+        keyJson["type"] = alg ?? "";
+        keyJson["publicKey"] = publicKey ?? "";
+        keyJson["privateKey"] = privateKey ?? "";
         keyJson["length"] = length;
-        keyJson["curve"] = null;
+        keyJson["curve"] = curve ?? "";
+        keyJson["cipherType"] = cipherType ?? "";
 
-        if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa") keyJson["curve"] = curve;
+        if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
+            keyJson["curve"] = curve;
+        if (alg.ToLower() == "aes")
+            keyJson["cipherType"] = cipherType;
 
         return keyJson;
+    }
+
+    public enum SymmetricModes
+    {
+        Gcm,
+        Ccm,
+        Ecb,
+        Cbc,
+        Cfb,
+        Ofb,
+        Ctr
+    }
+
+    public enum RsaKeyLengths
+    {
+        L128 = 128,
+        L192 = 192,
+        L256 = 256,
+        L512 = 512,
+        L1024 = 1024,
+        L2048 = 2048,
+        L3072 = 3072,
+        L4096 = 4096
+    }
+
+    public enum AesKeyLength
+    {
+        L128 = 128,
+        L192 = 192,
+        L256 = 256
     }
 }

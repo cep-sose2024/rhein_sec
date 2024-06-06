@@ -1,4 +1,4 @@
-namespace backend.Controllers.example;
+namespace backend.Controllers.app;
 
 /// <summary>
 /// Provides predefined policy options for Vault capabilities.
@@ -14,8 +14,8 @@ public class PolicyOptions
     /// <summary>
     /// Represents a policy with create, read, update, delete, and list capabilities.
     /// </summary>
-    public static readonly string
-        CRUDPolicy = "capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]";
+    public static readonly string CRUDPolicy =
+        "capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]";
 
     /// <summary>
     /// Represents a policy with read-only capability.

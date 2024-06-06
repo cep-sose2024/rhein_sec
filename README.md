@@ -169,7 +169,7 @@ The current capabilities are limited since the crypto layer hasn’t been implem
 
 Assuming you have already downloaded the backend server executable from the releases and configured the nksConfig.json file, you can run it via:
 ```
-./backend <--UseSwagger> -o <your_log_file> -port <>
+./backend <--UseSwagger> -o <your_log_file> -port <> -insecure
 ```
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
@@ -190,7 +190,11 @@ There is no single correct configuration for our NKS solution due to the flexibi
     1. The clustering port should be open to the other Vault instances.
     2. The API port should be open to the C# backend server.
 2. It is recommended to use Docker or Kubernetes to manage the Vault instances.
-3. Use the C# server-side wrapper Docker Container on your server (currently marked as TODO).
+3. Use the C# server-side wrapper Docker Container on your server using 
+
+    ```
+    docker pull rheinsec/network-key-storage:latest
+    ```
     1. Then, limit the outbound traffic of the container to just the vault instances.
     2. To do this, we recommend using `iptables` to limit the traffic to the vault instances.
 ```bash
@@ -203,7 +207,7 @@ sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.101 -j ACCEPT
 # Drop all other outbound connections
 sudo iptables -I DOCKER-USER -o eth0 -j DROP
 ```
-**Please make sure to replace these IPs with the addresses of your actual vault instances.**"
+**Please make sure to replace these IPs with the addresses of your actual vault instances.**
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---

@@ -23,14 +23,22 @@ public class KeyPairModel
     /// Gets or sets the token.
     /// </summary>
     public string Token { get; set; }
+
     /// <summary>
     /// Gets or sets the name.
     /// </summary>
     public string Name { get; set; }
+
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
     public string Type { get; set; }
+
+    /// <summary>
+    /// Gets or sets the cipherType.
+    /// </summary>
+    public string CipherType { get; set; }
+
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
@@ -46,6 +54,7 @@ public class SecretModel
     /// Gets or sets the token.
     /// </summary>
     public string Token { get; set; }
+
     /// <summary>
     /// Gets or sets the data.
     /// </summary>
@@ -60,12 +69,8 @@ public class DataModel
     /// <summary>
     /// Gets or sets the keys.
     /// </summary>
-    [JsonProperty("keys")] public List<KeyModel> Keys { get; set; }
-
-    /// <summary>
-    /// Gets or sets the signatures.
-    /// </summary>
-    [JsonProperty("signatures")] public List<SignatureModel> Signatures { get; set; }
+    [JsonProperty("keys")]
+    public List<KeyModel> keys { get; set; }
 
     /// <summary>
     /// Converts the data model to a JObject.
@@ -74,8 +79,7 @@ public class DataModel
     public JObject ToJObject()
     {
         var data = new JObject();
-        data["keys"] = JArray.FromObject(Keys);
-        data["signatures"] = JArray.FromObject(Signatures);
+        data["keys"] = JArray.FromObject(keys);
         return data;
     }
 }
@@ -88,56 +92,42 @@ public class KeyModel
     /// <summary>
     /// Gets or sets the id.
     /// </summary>
-    [JsonProperty("id")] public string Id { get; set; }
+    [JsonProperty("id")]
+    public string id { get; set; }
 
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")]
+    public string type { get; set; }
 
     /// <summary>
     /// Gets or sets the public key.
     /// </summary>
-    [JsonProperty("publickey")] public string PublicKey { get; set; }
+    [JsonProperty("publickey")]
+    public string publicKey { get; set; }
 
     /// <summary>
     /// Gets or sets the private key.
     /// </summary>
-    [JsonProperty("privatekey")] public string PrivateKey { get; set; }
+    [JsonProperty("privatekey")]
+    public string privateKey { get; set; }
 
     /// <summary>
     /// Gets or sets the curve.
     /// </summary>
-    [JsonProperty("curve")] public string Curve { get; set; }
+    [JsonProperty("curve")]
+    public string curve { get; set; }
 
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
-    [JsonProperty("length")] public int Length { get; set; }
-}
+    [JsonProperty("length")]
+    public int length { get; set; }
 
-// <summary>
-/// Represents a model for a signature.
-/// </summary>
-public class SignatureModel
-{
     /// <summary>
-    /// Gets or sets the id.
+    /// Gets or sets the cipher type.
     /// </summary>
-    public string Id { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the key id.
-    /// </summary>
-    public string KeyId { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the hashing algorithm.
-    /// </summary>
-    public string HashingAlg { get; set; }
-    
-    /// <summary>
-    /// Gets or sets the signature.
-    /// </summary>
-    public string Signature { get; set; }
+    [JsonProperty("ciphertype")]
+    public string cipherType { get; set; }
 }

@@ -1,13 +1,11 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+using backend.Controllers.example;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using JsonSerializer = System.Text.Json.JsonSerializer;
 
-
-namespace backend.Controllers.example;
+namespace backend.Controllers.app;
 
 /// <summary>
 /// The VaultCon class is responsible for managing interactions with the Vault service.
@@ -15,8 +13,7 @@ namespace backend.Controllers.example;
 /// </summary>
 public class VaultCon
 {
-    private static readonly HttpClient client = new();
-
+    private static readonly HttpClient client = HttpClientHelper.CreateClient();
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
@@ -40,16 +37,17 @@ public class VaultCon
     /// <param name="address">The Vault server address where the policy will be created.</param>
     /// <param name="token">The Vault token used for authentication.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the name of the created policy.</returns>
-    public async Task<string> CreateUserPolicy(string policyName, string policyPermissions, string address,
-        string token)
+    public async Task<string> CreateUserPolicy(
+        string policyName,
+        string policyPermissions,
+        string address,
+        string token
+    )
     {
         var url = $"{address}/v1/sys/policies/acl/{policyName}";
         var policy = $"path \"cubbyhole/secrets\" {{ {policyPermissions} }}";
 
-        var json = new JObject
-        {
-            ["policy"] = policy
-        };
+        var json = new JObject { ["policy"] = policy };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
         client.DefaultRequestHeaders.Remove("X-Vault-Token");
         client.DefaultRequestHeaders.Add("X-Vault-Token", token);
@@ -67,7 +65,12 @@ public class VaultCon
     /// <param name="token">The Vault token used for authentication.</param>
     /// <param name="userToken">The user token to be created.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the created user token.</returns>
-    public async Task<string> CreateUserToken(string policy, string address, string token, string userToken)
+    public async Task<string> CreateUserToken(
+        string policy,
+        string address,
+        string token,
+        string userToken
+    )
     {
         var url = $"{address}/v1/auth/token/create";
 
@@ -177,16 +180,28 @@ public class VaultCon
     public void ReadConfig()
     {
         var jsonFilePath = "nksconfig.json";
-        var jsonText = File.ReadAllText(jsonFilePath);
-        var jsonArray = JArray.Parse(jsonText);
-
-        foreach (var jsonObject in jsonArray)
+        try
         {
-            var address = (string)jsonObject["address"];
-            if (address.EndsWith("/")) address = address.Remove(address.Length - 1);
-            var token = (string)jsonObject["token"];
-            _addresses.Add(address);
-            _tokens.Add(token);
+            var jsonText = File.ReadAllText(jsonFilePath);
+            var jsonArray = JArray.Parse(jsonText);
+
+            foreach (var jsonObject in jsonArray)
+            {
+                var address = (string)jsonObject["address"];
+                if (address.EndsWith("/"))
+                    address = address.Remove(address.Length - 1);
+                var token = (string)jsonObject["token"];
+                _addresses.Add(address);
+                _tokens.Add(token);
+            }
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.Error.WriteLine("Error: The nksconfig.json file was not found: " + ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("An error occurred: " + ex.Message);
         }
     }
 
@@ -282,13 +297,20 @@ public class VaultCon
     /// <param name="userToken">The user token to be rotated.</param>
     /// <param name="newToken">The new token to be created.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the new user token.</returns>
-    public async Task<string> RotateUserToken(string policy, string address, string token, string userToken,
-        string newToken)
+    public async Task<string> RotateUserToken(
+        string policy,
+        string address,
+        string token,
+        string userToken,
+        string newToken
+    )
     {
         //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
         var secretsString = secretsObject.ToString();
-        var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(secretsString);
+        var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(
+            secretsString
+        );
         JsonElement secrets;
         if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))
         {
@@ -300,19 +322,10 @@ public class VaultCon
             secrets = JsonDocument.Parse("{}").RootElement;
         }
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-        //create new token
         await CreateUserToken(policy, address, token, newToken);
-        //store secret from variable with new token
         await CreateSecret(newToken, secrets.ToString(), address);
-        //delete old secret in old token
         await DeleteToken(token, address, userToken);
-        //return new token
-        stopwatch.Stop();
-        var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
 
-        Console.WriteLine($"Time taken222: {elapsedMilliseconds} ms");
         return newToken;
     }
 }
