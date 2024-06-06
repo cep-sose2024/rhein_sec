@@ -190,7 +190,11 @@ There is no single correct configuration for our NKS solution due to the flexibi
     1. The clustering port should be open to the other Vault instances.
     2. The API port should be open to the C# backend server.
 2. It is recommended to use Docker or Kubernetes to manage the Vault instances.
-3. Use the C# server-side wrapper Docker Container on your server (currently marked as TODO).
+3. Use the C# server-side wrapper Docker Container on your server using 
+
+    ```
+    docker pull rheinsec/network-key-storage:latest
+    ```
     1. Then, limit the outbound traffic of the container to just the vault instances.
     2. To do this, we recommend using `iptables` to limit the traffic to the vault instances.
 ```bash
