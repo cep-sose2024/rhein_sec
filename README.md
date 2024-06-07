@@ -198,14 +198,12 @@ There is no single correct configuration for our NKS solution due to the flexibi
     1. Then, limit the outbound traffic of the container to just the vault instances.
     2. To do this, we recommend using `iptables` to limit the traffic to the vault instances.
 ```bash
-# Allow outbound connections to server IP 192.168.1.100
-sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.100 -j ACCEPT
+## allow all inbound connections to port 5000
+sudo iptables -I DOCKER-USER -i docker0 -p tcp --dport 5000 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
 
-# Allow outbound connections to server IP 192.168.1.101
-sudo iptables -I DOCKER-USER -o eth0 -d 192.168.1.101 -j ACCEPT
+## drop all connections other than ones to your_vault_IP
+sudo iptables -I DOCKER-USER -o docker0 ! -d your_vault_IP -j DROP
 
-# Drop all other outbound connections
-sudo iptables -I DOCKER-USER -o eth0 -j DROP
 ```
 **Please make sure to replace these IPs with the addresses of your actual vault instances.**
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

@@ -1,12 +1,9 @@
-[
+{
+  "vaults": [
     {
-      "address": "https://localhost:8200",
-      "token": "hvs.yourRootToken"
-    },
-    {
-      "address": "https://localhost:8202",
-      "token": "hvs.yourRootToken"
+      "address": "https://your_vault_ip:your_vault_port",
+      "token": "hvs.your_root_token"
     }
-  ]
-  
-  
+  ],
+  "token_refresh": 60
+}
