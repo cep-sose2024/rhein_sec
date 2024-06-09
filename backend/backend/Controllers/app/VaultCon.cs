@@ -216,7 +216,7 @@ public class VaultCon
     /// <returns>A string that represents the generated token.</returns>
     public static string GenerateToken(int length)
     {
-        const string valid = "abcdefg"; //TODO FIX
+        const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*-_";
         var res = new StringBuilder();
         using (var rng = new RNGCryptoServiceProvider())
         {

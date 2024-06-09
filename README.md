@@ -171,6 +171,8 @@ Assuming you have already downloaded the backend server executable from the rele
 ```
 ./backend <--UseSwagger> -o <your_log_file> -port <> -insecure
 ```
+
+[Backend README](backend/backend/README.md)
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
 

@@ -155,7 +155,6 @@ public class apidemo : ControllerBase
 
             var retJObject = JObject.Parse(ret.ToString());
             var data = retJObject.GetValue("data");
-            Console.WriteLine(data);
             newToken = await RotateToken(oldToken, data["timestamp"].Value<long>());
             var timestamp = Checktimestamp(oldToken, newToken, data["timestamp"].Value<long>());
             data["timestamp"] = timestamp;
@@ -241,9 +240,8 @@ public class apidemo : ControllerBase
                 }
             }
 
-            Console.WriteLine(ret.ToString());
             var retJObject = JObject.Parse(ret.ToString());
-            var keysArray = (JArray)retJObject["data"]["keys"]; //TODO add ignore case code
+            var keysArray = (JArray)retJObject["data"]["keys"];
 
             var existingKey = keysArray.FirstOrDefault(obj =>
                 obj is JObject jObj
@@ -350,14 +348,12 @@ public class apidemo : ControllerBase
                 data.Add("keys", new JArray { keyPair });
                 retJObject.Add("data", data);
             }
-
             newToken = await RotateToken(oldToken, retJObject["data"]["timestamp"].Value<long>());
             var timestamp = Checktimestamp(
                 oldToken,
                 newToken,
                 retJObject["data"]["timestamp"].Value<long>()
             );
-            Console.WriteLine(timestamp + "   " + retJObject["data"]["timestamp"].Value<long>());
             retJObject["data"]["timestamp"] = timestamp;
             var putRetCode = await PutSecret(
                 oldToken,
@@ -370,10 +366,6 @@ public class apidemo : ControllerBase
                 );
 
             var returnObject = new { data = retJObject.GetValue("data"), newToken };
-
-            Console.WriteLine(
-                "JSONDOC: " + JsonDocument.Parse(retJObject["data"].ToString()).RootElement
-            );
 
             return Ok(returnObject);
         }
