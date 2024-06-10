@@ -2,6 +2,8 @@ name: Docker Build and Push
 
 on:
   push:
+    paths:
+    - 'backend/**'
     branches: [ "main" ]
   workflow_dispatch:
 

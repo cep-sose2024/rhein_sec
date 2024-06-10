@@ -185,24 +185,29 @@ You can test it using our own [fork](https://github.com/cep-sose2024/rhein_sec) 
 
 There is no single correct configuration for our NKS solution due to the flexibility of the tools we provide. However, here are some general guidelines and best practices to follow:
 
-1. All Vault instances should be behind a proxy and accessible only from the other Vault instances and the C# backend server.
-    1. The clustering port should be open to the other Vault instances.
+1. All Vault instances should be behind a proxy and accessible only from other Vault instances and the C# backend server.
+    1. The clustering port should be open to other Vault instances.
     2. The API port should be open to the C# backend server.
 2. It is recommended to use Docker or Kubernetes to manage the Vault instances.
-3. Use the C# server-side wrapper Docker Container on your server using 
+3. Use the C# server-side wrapper Docker Container. More details can be found here: [Backend README](backend/backend/README.md)
 
-    ```
-    docker pull rheinsec/network-key-storage:latest
-    ```
-    1. Then, limit the outbound traffic of the container to just the vault instances.
-    2. To do this, we recommend using `iptables` to limit the traffic to the vault instances.
+    1. Next, limit the outbound traffic of the container to just the Vault instances.
+    2. To do this, we recommend using `iptables` to limit the traffic to the Vault instances and the nginx server.
 ```bash
-## allow all inbound connections to port 5000
-sudo iptables -I DOCKER-USER -i docker0 -p tcp --dport 5000 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
+# Flush the DOCKER-USER chain (or create it if it does not exist)
+sudo iptables -F DOCKER-USER
 
-## drop all connections other than ones to your_vault_IP
-sudo iptables -I DOCKER-USER -o docker0 ! -d your_vault_IP -j DROP
+# Allow incoming and outgoing traffic to and from 172.17.0.1 on port 5000, this is your host IP in the Docker network 
+sudo iptables -A DOCKER-USER -d 172.17.0.1 -p tcp --dport 5000 -j ACCEPT
+sudo iptables -A DOCKER-USER -s 172.17.0.1 -p tcp --sport 5000 -j ACCEPT
 
+# Allow incoming and outgoing traffic to and from your_vault_ip on port 5000
+sudo iptables -A DOCKER-USER -d your_vault_ip -p tcp --dport 5000 -j ACCEPT
+sudo iptables -A DOCKER-USER -s your_vault_ip -p tcp --sport 5000 -j ACCEPT
+
+# Drop all other traffic to and from port 5000
+sudo iptables -A DOCKER-USER -p tcp --dport 5000 -j DROP
+sudo iptables -A DOCKER-USER -p tcp --sport 5000 -j DROP
 ```
 **Please make sure to replace these IPs with the addresses of your actual vault instances.**
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

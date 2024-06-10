@@ -52,3 +52,24 @@ api_addr     = "https://127.0.0.1:8202"
 cluster_addr = "https://127.0.0.1:8201"
 max_lease_ttl = "8760h"
 ```
+
+# Example nginx config  
+```
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    ssl_certificate /path/to/your/cert.crt;
+    ssl_certificate_key /path/to/your/key.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass https://localhost:5000;
+        proxy_ssl_server_name on;
+        proxy_ssl_protocols TLSv1.2 TLSv1.3;
+        proxy_ssl_ciphers HIGH:!aNULL:!MD5;
+        
+    }
+}
+```
