@@ -27,14 +27,11 @@
 ## 🔍 About The Project
 
 ### What is Enmeshed?
-<a href="https://github.com/nmshd">Enmeshed</a> is a open source Project by j&s-soft, the project offeres a secure and feutreistic concept to extchange information or documents between People or organisations, the application uses end to end encryption for secure transfer and privacy, more information can be found [here](https://enmeshed.eu/explore/how_does_enmeshed_work)
+[Enmeshed](https://github.com/nmshd) is an open-source project by j&s Soft. The project offers a secure and futuristic concept for exchanging information or documents between people or organizations. The application uses end-to-end encryption for secure transfer and privacy. More information can be found [here](https://enmeshed.eu/explore/how_does_enmeshed_work).
 
-### How does our Network Key storage Solution work?
-This application is designed to provide a secure method for storing keys, which are currently stored insecurely to a network-based solution. This solution will be built on Hashicorp Vault and a C# ASP .NET core outward-facing API. The API will initialize user tokens and communicate with the Vault server.<br>
+### How does our Network Key Storage Solution work?
+This application is designed to provide a secure method for storing keys, which are currently stored insecurely, to a network-based solution. This solution will be built on Hashicorp Vault and a C# ASP .NET core outward-facing API. The API will initialize user tokens and communicate with the Vault server.<br>
 The backend of the application should be capable of running securely with any similar application that wishes to store keys securely and retrieve them using a user token.
-
-The client side of the application is expected to communicate with the so-called ‘Crypto Abstraction Layer’, which is yet to be released by j&s-soft.
-
 
 ### Why Network Key storage? 
 Network key storage is designed to solve the issue of some devices not having a Hardware Security Module that is compatible with the Enmeshed application. This would still allow older, non-bleeding-edge devices to store their keys securely.
@@ -47,7 +44,7 @@ Network key storage is designed to solve the issue of some devices not having a 
 
 * ASP .NET core 8.0.
 * Hashicorp Vault 1.16.2.
-* Rust for the Client side of the application.
+* Rust for the client side of the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -76,7 +73,7 @@ Then, execute it using:
 ```
 
 Replace `<your_desired_ip>`, `<your_desired_vault_port>`, `<initialize_vault>`, and `<download_backend>` with your desired IP address, port number, initialization flag, and backend download flag, respectively. If not provided, the script will use the default values.
-This script automatically installs all the required packages and launches the backend server, Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
+This script automatically installs all the required packages and launches the backend server. Please replace `<your_desired_vault_port>` with the specific port number you wish to use for the vault.
 
 Every time you would like to unseal Vault, just run the unseal script in the same way with:
 ``` bash
@@ -99,7 +96,7 @@ Then, execute it using:
 ```bash
 ./cluster.sh
 ```
-This would also make Download the server executable from the releases and configure the nksConfig.json file automatically, it would then run on http://localhost:5000.
+This would also download the server executable from the releases and configure the nksConfig.json file automatically, it would then run on http://localhost:5000.
 
 To start the vaults, use the following command:
 
@@ -115,12 +112,12 @@ To stop the vaults, use the following command:
 ./cluster.sh stop
 ```
 
-### setting up the code
+### Setting up the code
 We recommend the following:
 * JetBrains RustRover for the client-side code
 * JetBrains Rider for the server-side code
 
-### or use one of the releases
+### Or use one of the releases
 
 ### Setting up Vault
 For testing purposes, we recommend using a locally hosted instance of Vault. Vault is available as a package on most Linux package managers.<br>
@@ -177,9 +174,10 @@ Assuming you have already downloaded the backend server executable from the rele
   To fix this issue, add the certificate to your local trusted certificates. On Linux, this is typically located in `/usr/local/share/ca-certificates/`. Alternatively, you can run the server with the `-insecure` argument which would make it ignore Certificate errors.
 
 
-### Testing the code with the Crypto Abstration layer 
+### Testing the code with the Crypto Abstraction Layer 
 
-you could test it using our own [fork](https://github.com/cep-sose2024/rhein_sec) of the crypto abstraction layer 
+You can test it using our own [fork](https://github.com/cep-sose2024/rhein_sec) of the Crypto Abstraction Layer. For more information, refer to the README in that repository.
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
