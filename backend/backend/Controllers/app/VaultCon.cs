@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using backend.Controllers.example;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -17,6 +18,7 @@ public class VaultCon
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
+    public long _token_refresh = 0;
 
     /// <summary>
     /// Initializes a new instance of the VaultCon class.
@@ -183,14 +185,16 @@ public class VaultCon
         try
         {
             var jsonText = File.ReadAllText(jsonFilePath);
-            var jsonArray = JArray.Parse(jsonText);
+            var jsonObject = JObject.Parse(jsonText);
 
-            foreach (var jsonObject in jsonArray)
+            var jsonArray = (JArray)jsonObject["vaults"];
+            _token_refresh = (long)jsonObject["token_refresh"];
+            foreach (var configObject in jsonArray)
             {
-                var address = (string)jsonObject["address"];
+                var address = (string)configObject["address"];
                 if (address.EndsWith("/"))
                     address = address.Remove(address.Length - 1);
-                var token = (string)jsonObject["token"];
+                var token = (string)configObject["token"];
                 _addresses.Add(address);
                 _tokens.Add(token);
             }
@@ -302,7 +306,8 @@ public class VaultCon
         string address,
         string token,
         string userToken,
-        string newToken
+        string newToken,
+        long timestamp
     )
     {
         //store secret in variable
@@ -311,15 +316,23 @@ public class VaultCon
         var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(
             secretsString
         );
-        JsonElement secrets;
+        JsonElement secrets = default;
         if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))
         {
-            var jsonData = JsonConvert.SerializeObject(secretsDeserialized["data"]);
-            secrets = JsonDocument.Parse(jsonData).RootElement;
+            var data = secretsDeserialized["data"] as JObject;
+            if (data != null)
+            {
+                data["timestamp"] = timestamp;
+                secretsDeserialized["data"] = data;
+                var jsonData = JsonConvert.SerializeObject(secretsDeserialized["data"]);
+                secrets = JsonDocument.Parse(jsonData).RootElement;
+            }
         }
         else
         {
-            secrets = JsonDocument.Parse("{}").RootElement;
+            var dataToSave = new JsonObject { ["keys"] = new JsonArray() };
+            dataToSave.Add("timestamp", ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds());
+            secrets = JsonDocument.Parse(dataToSave.ToString()).RootElement;
         }
 
         await CreateUserToken(policy, address, token, newToken);

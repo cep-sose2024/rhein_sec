@@ -58,7 +58,7 @@ public class apidemo : ControllerBase
             );
 
         var dataToSave = new JsonObject { ["keys"] = new JsonArray() };
-
+        dataToSave.Add("timestamp", ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds());
         var jsonString = dataToSave.ToString();
 
         await PutSecret(user_token, JsonDocument.Parse(jsonString).RootElement);
@@ -104,13 +104,7 @@ public class apidemo : ControllerBase
 
             if (ret > 199 && ret < 300)
             {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-                newToken = await RotateToken(oldToken);
-                stopwatch.Stop();
-                var elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-
-                Console.WriteLine($"Time taken: {elapsedMilliseconds} ms");
+                newToken = await RotateToken(oldToken, secretModel.Data.timestamp);
                 var returnObject = new { returnCode = ret, newToken };
                 return Ok(returnObject);
             }
@@ -160,8 +154,11 @@ public class apidemo : ControllerBase
             }
 
             var retJObject = JObject.Parse(ret.ToString());
-            newToken = await RotateToken(oldToken);
-            var returnObject = new { data = retJObject.GetValue("data"), newToken };
+            var data = retJObject.GetValue("data");
+            newToken = await RotateToken(oldToken, data["timestamp"].Value<long>());
+            var timestamp = Checktimestamp(oldToken, newToken, data["timestamp"].Value<long>());
+            data["timestamp"] = timestamp;
+            var returnObject = new { data = data, newToken };
             return Ok(returnObject);
         }
 
@@ -189,12 +186,12 @@ public class apidemo : ControllerBase
                 ret = await _vaultCon.DeleteSecrets(oldToken, _vaultCon._addresses[i]);
 
             var dataToSave = new JsonObject { ["keys"] = new JsonArray() };
+            dataToSave.Add("timestamp", ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds());
 
             var jsonString = dataToSave.ToString();
             await PutSecret(oldToken, JsonDocument.Parse(jsonString).RootElement);
 
-            newToken = await RotateToken(oldToken);
-
+            newToken = await RotateToken(oldToken, 0);
             var returnObject = new
             {
                 tokenExists,
@@ -243,9 +240,8 @@ public class apidemo : ControllerBase
                 }
             }
 
-            Console.WriteLine(ret.ToString());
             var retJObject = JObject.Parse(ret.ToString());
-            var keysArray = (JArray)retJObject["data"]["keys"]; //TODO add ignore case code
+            var keysArray = (JArray)retJObject["data"]["keys"];
 
             var existingKey = keysArray.FirstOrDefault(obj =>
                 obj is JObject jObj
@@ -255,7 +251,6 @@ public class apidemo : ControllerBase
             var newToken = "";
             if (existingKey != null)
             {
-                //    newToken = await RotateToken(oldToken);
                 var errorResponse = new
                 {
                     message = $"Key with ID {keyPairModel.Name} already exists."
@@ -353,13 +348,23 @@ public class apidemo : ControllerBase
                 data.Add("keys", new JArray { keyPair });
                 retJObject.Add("data", data);
             }
-
+            newToken = await RotateToken(oldToken, retJObject["data"]["timestamp"].Value<long>());
+            var timestamp = Checktimestamp(
+                oldToken,
+                newToken,
+                retJObject["data"]["timestamp"].Value<long>()
+            );
+            retJObject["data"]["timestamp"] = timestamp;
             var putRetCode = await PutSecret(
                 oldToken,
                 JsonDocument.Parse(retJObject["data"].ToString()).RootElement
             );
-            Console.WriteLine("CODE ::: " + putRetCode);
-            newToken = await RotateToken(oldToken);
+            if (putRetCode >= 400 && putRetCode < 600)
+                return StatusCode(
+                    putRetCode,
+                    new { message = "Error occurred while putting the secret", newToken }
+                );
+
             var returnObject = new { data = retJObject.GetValue("data"), newToken };
 
             return Ok(returnObject);
@@ -413,9 +418,17 @@ public class apidemo : ControllerBase
     /// Asynchronously rotates a user token.
     /// </summary>
     /// <param name="userToken">The user token to be rotated.</param>
+    /// <param name="timestamp">The timestamp of the token.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the new user token.</returns>
-    private async Task<string> RotateToken(string userToken)
+    /// <remarks>
+    /// This method first checks if the difference between the current timestamp and the provided timestamp is less than the token refresh time. If it is, the method returns the original user token.
+    /// If the difference is greater, the method generates a new token and rotates the user token at all Vault addresses. The new token is then returned.
+    /// </remarks>
+    private async Task<string> RotateToken(string userToken, long timestamp)
     {
+        var currentTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        if (currentTimestamp - timestamp < _vaultCon._token_refresh)
+            return userToken;
         var newToken = VaultCon.GenerateToken(80);
         for (var i = 0; i < _vaultCon._addresses.Count; i++)
             newToken = await _vaultCon.RotateUserToken(
@@ -423,10 +436,26 @@ public class apidemo : ControllerBase
                 _vaultCon._addresses[i],
                 _vaultCon._tokens[i],
                 userToken,
-                newToken
+                newToken,
+                DateTimeOffset.UtcNow.ToUnixTimeSeconds()
             );
 
         return newToken;
+    }
+
+    /// <summary>
+    /// Checks the timestamp of a token.
+    /// </summary>
+    /// <param name="oldToken">The original token.</param>
+    /// <param name="newToken">The new token.</param>
+    /// <param name="timestamp">The timestamp of the token.</param>
+    /// <returns>The timestamp of the token. If the old token is equal to the new token, the method returns the provided timestamp. Otherwise, it returns the current timestamp.</returns>
+    public static long Checktimestamp(string oldToken, string newToken, long timestamp)
+    {
+        if (oldToken.Equals(newToken))
+            return timestamp;
+        var currentTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+        return currentTimestamp;
     }
 
     /// <summary>
@@ -460,7 +489,19 @@ public class apidemo : ControllerBase
             || keysElement.ValueKind != JsonValueKind.Array
         )
             return BadRequest("Keys field is missing or is not an array.");
+        if (!lowerCaseData.TryGetValue("timestamp", out var timestampElement))
+            return BadRequest("Timestamp field is missing.");
 
+        if (timestampElement.ValueKind != JsonValueKind.Number)
+            return BadRequest("Timestamp field is not a number.");
+
+        var timestamp = timestampElement.GetInt64();
+        var currentTimestamp = ((DateTimeOffset)DateTime.UtcNow).ToUnixTimeSeconds();
+
+        if (currentTimestamp - timestamp > 300)
+            return BadRequest("Timestamp is too far in the past.");
+        if (timestamp - currentTimestamp > 300)
+            return BadRequest("Timestamp is too far in the future.");
         var ids = new HashSet<string>();
 
         foreach (var keyElement in keysElement.EnumerateArray())
@@ -521,9 +562,7 @@ public class apidemo : ControllerBase
                     (privateKey != null && privateKey.Length > 684)
                     || (publicKey != null && publicKey.Length > 684)
                 )
-                {
                     return BadRequest("The RSA key length is too long.");
-                }
             }
 
             if (type == "aes")

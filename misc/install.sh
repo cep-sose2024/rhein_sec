@@ -199,12 +199,15 @@ if [ "$DOWNLOAD_BACKEND" != "--nobackend" ] ; then
     echo "Creating 'nksconfig.json'..."
     ROOT_TOKEN=$(grep 'Initial Root Token' unsealKeys.txt | awk '{print $4}') # Get the root token from 'unsealKeys.txt'
     cat << EOF > backend_release/nksconfig.json # Create a new file named 'nksconfig.json' with the provided content
-[
-    {
-      "address": "$VAULT_ADDR",
-      "token": "$ROOT_TOKEN"
-    }
-]
+{  
+  "vaults": [
+        {
+        "address": "$VAULT_ADDR",
+        "token": "$ROOT_TOKEN"
+        }
+    ],
+    "token_refresh": 60
+}
 EOF
 
     # Start the executable server with the --UseSwagger argument

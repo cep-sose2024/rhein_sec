@@ -73,6 +73,12 @@ public class DataModel
     public List<KeyModel> keys { get; set; }
 
     /// <summary>
+    /// Gets or sets the timestamp.
+    /// </summary>
+    [JsonProperty("timestamp")]
+    public long timestamp { get; set; }
+
+    /// <summary>
     /// Converts the data model to a JObject.
     /// </summary>
     /// <returns>A JObject that represents the data model.</returns>
@@ -80,6 +86,7 @@ public class DataModel
     {
         var data = new JObject();
         data["keys"] = JArray.FromObject(keys);
+        data["timestamp"] = timestamp;
         return data;
     }
 }
