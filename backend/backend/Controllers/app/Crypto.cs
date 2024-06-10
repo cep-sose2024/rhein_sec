@@ -186,7 +186,6 @@ public class Crypto
     public enum SymmetricModes
     {
         Gcm,
-        Ccm,
         Ecb,
         Cbc,
         Cfb,
