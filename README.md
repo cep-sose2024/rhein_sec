@@ -146,41 +146,40 @@ vault server -config=VaultConfig
 After that, go to https://localhost:8200/ui/ and set up the root token and unseal the vault.
 
 Finally, put the root token in a file called `nksconfig.json` in the **backend/** folder. The file should look like this: 
-``` json
-[
+```json
+{
+  "vaults": [
     {
-      "address": "https://localhost:8200",
-      "token": "hvs.yourRootToken"
-    },
-    {
-      "address": "https://localhost:8202",
-      "token": "hvs.yourRootToken"
+      "address": "https://your_vault_address",
+      "token": "hvs.your_root_token"
     }
-]
+  ],
+  "token_refresh": 60
+}
 ```
-This enables the RheinSec NKS solution to have many different instances of Vault hosting the secrets. This would make it very hard for the user’s secrets to get lost.
+This configuration allows the RheinSec NKS solution to manage multiple instances of Vault hosting the secrets, which enhances the security of the user's secrets.
 
+However, using this is not recommended. We suggest using multiple vault instances in a cluster for better security and redundancy.
 
-### Using the Client & the backend Server
-The client is currently distributed as a Rust executable for Windows, Linux, and macOS. The latest releases can be found on the releases page.
+The `token_refresh` variable specifies the lifespan of the tokens (in seconds) before they are replaced with new ones.
 
-The current capabilities are limited since the crypto layer hasn’t been implemented yet by the enmeshed developers, thus basic PoC code is implemented. There are two main methods:<br>
- one for testing the CRUD capabilities of the backend server, and another for testing the speed of the server. Currently, the response times for everything running on the same system (vault, backend server, client) is about 50 milliseconds. It doesn’t seem that the system gets slower with an expanding number of tokens. Currently, the number of tokens created on servers is about 14,000, which still hasn’t affected the speed.
-
-Assuming you have already downloaded the backend server executable from the releases and configured the nksConfig.json file, you can run it via:
+### Using the Backend Server
+Assuming you have already downloaded the backend server executable from the releases and configured the `nksConfig.json` file, you can run it via:
 ```
-./backend <--UseSwagger> -o <your_log_file> -port <> -insecure
+./backend <--UseSwagger> -o <your_log_file> -port <port_number> -insecure
 ```
 
 [Backend README](backend/backend/README.md)
+
 #### Known Issues:
 - The C# code could produce errors if the certificate isn't trusted by your local CA.
 
-  to fix this issue add the certificate to your local trusted certificates, under linux its in ``/usr/local/share/ca-certificates/``. 
-
-  
+  To fix this issue, add the certificate to your local trusted certificates. On Linux, this is typically located in `/usr/local/share/ca-certificates/`. Alternatively, you can run the server with the `-insecure` argument which would make it ignore Certificate errors.
 
 
+### Testing the code with the Crypto Abstration layer 
+
+you could test it using our own [fork](https://github.com/cep-sose2024/rhein_sec) of the crypto abstraction layer 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
