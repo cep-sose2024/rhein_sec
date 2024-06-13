@@ -11,7 +11,7 @@ public class TokenModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; } = null!;
+    public string Token { get; set; } = null!;
 }
 
 /// <summary>
@@ -22,27 +22,27 @@ public class KeyPairModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; } = null!;
+    public string Token { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the name.
     /// </summary>
-    public string? Name { get; }
+    public string Name { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
-    public string Type { get; } = null!;
+    public string Type { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the cipherType.
     /// </summary>
-    public string CipherType { get; } = null!;
+    public string CipherType { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
-    public int? Length { get; }
+    public int? Length { get; set; }
 }
 
 /// <summary>
@@ -53,12 +53,12 @@ public class SecretModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; } = null!;
+    public string Token { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the data.
     /// </summary>
-    public DataModel Data { get; } = null!;
+    public DataModel Data { get; set; } = null!;
 }
 
 /// <summary>
