@@ -27,7 +27,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateBootstrapLogger();
 
 builder.Host.UseSerilog(
-    (context, services, configuration) =>
+    (context, _, configuration) =>
         configuration
             .ReadFrom.Configuration(context.Configuration)
             .Enrich.FromLogContext()
@@ -45,7 +45,7 @@ builder.Services.AddLogging(loggingBuilder =>
     loggingBuilder.AddSerilog(Log.Logger);
 });
 builder.WebHost.ConfigureKestrel(
-    (context, serverOptions) =>
+    (_, serverOptions) =>
     {
         serverOptions.AddServerHeader = false;
 
@@ -90,8 +90,9 @@ builder.WebHost.ConfigureKestrel(
                         {
                             options.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
                             options.ClientCertificateMode = ClientCertificateMode.NoCertificate;
-                            options.OnAuthenticate = (context, sslOptions) =>
+                            options.OnAuthenticate = (_, sslOptions) =>
                             {
+#pragma warning disable CA1416
                                 sslOptions.CipherSuitesPolicy = new CipherSuitesPolicy(
                                     new[]
                                     {
@@ -108,6 +109,7 @@ builder.WebHost.ConfigureKestrel(
                                         TlsCipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
                                     }
                                 );
+#pragma warning restore CA1416
                             };
                         }
                     );
@@ -146,13 +148,13 @@ var app = builder.Build();
 app.Use(
     async (context, next) =>
     {
-        context.Response.Headers.Add(
+        context.Response.Headers.Append(
             "Strict-Transport-Security",
             "max-age=31536000; includeSubDomains"
         );
-        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-        context.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
-        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("X-Frame-Options", "SAMEORIGIN");
+        context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
         await next();
     }
 );
@@ -174,7 +176,7 @@ if (app.Environment.IsDevelopment() || args.Contains("--UseSwagger"))
     lifetime.ApplicationStarted.Register(() =>
     {
         var server = app.Services.GetService(typeof(IServer)) as IServer;
-        var addresses = server.Features.Get<IServerAddressesFeature>().Addresses;
+        var addresses = server!.Features.Get<IServerAddressesFeature>()!.Addresses;
         foreach (var address in addresses)
         {
             var swaggerUrl = $"{address}/swagger";

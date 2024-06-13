@@ -1,5 +1,7 @@
 using Serilog;
 
+namespace backend.Controllers.app.logging;
+
 /// <summary>
 /// Middleware for logging the client's IP address for each request.
 /// </summary>
@@ -24,10 +26,10 @@ public class RequestLoggingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         // Get the client's IP address from the HttpContext
-        var clientIP = context.Connection.RemoteIpAddress?.ToString();
+        var clientIp = context.Connection.RemoteIpAddress?.ToString();
 
         // Log the client's IP address using Serilog
-        Log.Information("Request from IP: {ClientIP}", clientIP);
+        Log.Information("Request from IP: {ClientIP}", clientIp);
 
         // Continue processing the request
         await _next(context);

@@ -3,9 +3,9 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
-using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
+
+namespace backend.Controllers.app;
 
 /// <summary>
 /// Provides methods for generating and managing cryptographic keys.
@@ -14,16 +14,15 @@ using Org.BouncyCastle.X509;
 /// This class includes methods for generating X25519, Ed25519, and RSA key pairs,
 /// as well as methods for converting these keys to JSON objects and PEM formatted strings.
 /// </remarks>
-public class Crypto
+public static class Crypto
 {
     /// <summary>
     /// Generates a X25519 key pair.
     /// </summary>
     /// <param name="keySize">The size of the key in bits. Default is 256.</param>
     /// <returns>A tuple where the first item is the private key and the second item is the public key. Both keys are Base64 encoded strings.</returns>
-    private static (string, string) GenerateX25519KeyPair(int keySize = 256)
+    private static (string?, string?) GenerateX25519KeyPair(int keySize = 256)
     {
-        var generator2 = new Ed25519KeyPairGenerator();
         var generator = new X25519KeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
         var keyPair = generator.GenerateKeyPair();
@@ -43,7 +42,7 @@ public class Crypto
     /// </summary>
     /// <param name="keySize">The size of the key in bits. Default is 256.</param>
     /// <returns>A tuple where the first item is the private key and the second item is the public key. Both keys are Base64 encoded strings.</returns>
-    private static (string, string) GenerateEd25519KeyPair(int keySize = 256)
+    private static (string?, string?) GenerateEd25519KeyPair(int keySize = 256)
     {
         var generator = new Ed25519KeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
@@ -76,7 +75,7 @@ public class Crypto
     /// </summary>
     /// <param name="keySize">The size of the key in bits. Default is 2048.</param>
     /// <returns>A tuple where the first item is the private key and the second item is the public key. Both keys are PEM encoded strings.</returns>
-    private static (string, string) GenerateRsaKeyPair(int keySize = 2048)
+    private static (string?, string?) GenerateRsaKeyPair(int keySize = 2048)
     {
         var generator = new RsaKeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), keySize));
@@ -107,10 +106,10 @@ public class Crypto
     /// <param name="name">The name to be associated with the key pair.</param>
     /// <param name="keySize">The size of the key in bits. Default is 256.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
-    public static JObject GetxX25519KeyPair(string name, int keySize = 256)
+    public static JObject GetxX25519KeyPair(string? name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateX25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize, null);
+        return MakeKeyJson(name, "ecdh", "Curve25519", publicKey, privateKey, keySize, null!);
     }
 
     /// <summary>
@@ -119,10 +118,10 @@ public class Crypto
     /// <param name="name">The name to be associated with the key pair.</param>
     /// <param name="keySize">The size of the key in bits. Default is 256.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
-    public static JObject GetEd25519KeyPair(string name, int keySize = 256)
+    public static JObject GetEd25519KeyPair(string? name, int keySize = 256)
     {
         var (privateKey, publicKey) = GenerateEd25519KeyPair(keySize);
-        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize, null);
+        return MakeKeyJson(name, "ecdsa", "Curve25519", publicKey, privateKey, keySize, "");
     }
 
     /// <summary>
@@ -131,18 +130,18 @@ public class Crypto
     /// <param name="name">The name to be associated with the key pair.</param>
     /// <param name="keySize">The size of the key in bits. Default is 2048.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
-    public static JObject GetRsaKeyPair(string name, int keySize = 2048)
+    public static JObject GetRsaKeyPair(string? name, int keySize = 2048)
     {
         var (privateKey, publicKey) = GenerateRsaKeyPair(keySize);
-        return MakeKeyJson(name, "RSA", null, publicKey, privateKey, keySize, null);
+        return MakeKeyJson(name, "RSA", "", publicKey, privateKey, keySize, "");
     }
 
-    public static JObject GetAesKey(string name, SymmetricModes alg, int keySize = 256)
+    public static JObject GetAesKey(string? name, SymmetricModes alg, int keySize = 256)
     {
         if (keySize != 128 && keySize != 192 && keySize != 256)
-            return null;
+            return null!;
         var b46Key = GenerateSymmetricKey(keySize);
-        return MakeKeyJson(name, "AES", null, null, b46Key, keySize, alg.ToString());
+        return MakeKeyJson(name, "AES", "", "", b46Key, keySize, alg.ToString());
     }
 
     /// <summary>
@@ -154,15 +153,16 @@ public class Crypto
     /// <param name="publicKey">The public key of the key pair.</param>
     /// <param name="privateKey">The private key of the key pair.</param>
     /// <param name="length">The size of the key in bits.</param>
+    /// <param name="cipherType">The Ciphertype of the AES alg.</param>
     /// <returns>A JSON object containing the key pair and associated information.</returns>
     private static JObject MakeKeyJson(
-        string name,
-        string alg,
-        string curve,
-        string publicKey,
-        string privateKey,
+        string? name,
+        string? alg,
+        string? curve,
+        string? publicKey,
+        string? privateKey,
         int length,
-        string cipherType
+        string? cipherType
     )
     {
         var keyJson = new JObject();
@@ -175,7 +175,7 @@ public class Crypto
         keyJson["curve"] = curve ?? "";
         keyJson["cipherType"] = cipherType ?? "";
 
-        if (alg.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
+        if (alg!.ToLower() == "ecdh" || alg.ToLower() == "ecdsa")
             keyJson["curve"] = curve;
         if (alg.ToLower() == "aes")
             keyJson["cipherType"] = cipherType;

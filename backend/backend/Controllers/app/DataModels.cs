@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace backend.Controllers.example;
+namespace backend.Controllers.app;
 
 /// <summary>
 /// Represents a model for a token.
@@ -11,7 +11,7 @@ public class TokenModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; set; }
+    public string Token { get; } = null!;
 }
 
 /// <summary>
@@ -22,27 +22,27 @@ public class KeyPairModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; set; }
+    public string Token { get; } = null!;
 
     /// <summary>
     /// Gets or sets the name.
     /// </summary>
-    public string Name { get; set; }
+    public string? Name { get; }
 
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
-    public string Type { get; set; }
+    public string Type { get; } = null!;
 
     /// <summary>
     /// Gets or sets the cipherType.
     /// </summary>
-    public string CipherType { get; set; }
+    public string CipherType { get; } = null!;
 
     /// <summary>
     /// Gets or sets the length.
     /// </summary>
-    public int? Length { get; set; }
+    public int? Length { get; }
 }
 
 /// <summary>
@@ -53,12 +53,12 @@ public class SecretModel
     /// <summary>
     /// Gets or sets the token.
     /// </summary>
-    public string Token { get; set; }
+    public string Token { get; } = null!;
 
     /// <summary>
     /// Gets or sets the data.
     /// </summary>
-    public DataModel Data { get; set; }
+    public DataModel Data { get; } = null!;
 }
 
 /// <summary>
@@ -70,7 +70,7 @@ public class DataModel
     /// Gets or sets the keys.
     /// </summary>
     [JsonProperty("keys")]
-    public List<KeyModel> keys { get; set; }
+    public List<KeyModel> keys { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the timestamp.
@@ -100,31 +100,31 @@ public class KeyModel
     /// Gets or sets the id.
     /// </summary>
     [JsonProperty("id")]
-    public string id { get; set; }
+    public string id { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the type.
     /// </summary>
     [JsonProperty("type")]
-    public string type { get; set; }
+    public string type { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the public key.
     /// </summary>
     [JsonProperty("publickey")]
-    public string publicKey { get; set; }
+    public string publicKey { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the private key.
     /// </summary>
     [JsonProperty("privatekey")]
-    public string privateKey { get; set; }
+    public string privateKey { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the curve.
     /// </summary>
     [JsonProperty("curve")]
-    public string curve { get; set; }
+    public string curve { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the length.
@@ -136,5 +136,5 @@ public class KeyModel
     /// Gets or sets the cipher type.
     /// </summary>
     [JsonProperty("ciphertype")]
-    public string cipherType { get; set; }
+    public string cipherType { get; set; } = null!;
 }

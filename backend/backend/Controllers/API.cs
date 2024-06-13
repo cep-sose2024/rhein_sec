@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using backend.Controllers.app;
-using backend.Controllers.example;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
@@ -16,16 +15,16 @@ namespace backend.Controllers;
 /// </remarks>
 [ApiController]
 //[Route("[controller]")]
-public class apidemo : ControllerBase
+public class Apidemo : ControllerBase
 {
     private VaultCon _vaultCon = new();
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="apidemo"/> class.
+    /// Initializes a new instance of the <see cref="Apidemo"/> class.
     /// </summary>
     /// <param name="logger">The logger to be used by the instance.</param>
-    public apidemo(ILogger<apidemo> logger)
+    public Apidemo(ILogger<Apidemo> logger)
     {
         _logger = logger;
     }
@@ -37,16 +36,16 @@ public class apidemo : ControllerBase
     /// OkObjectResult (200) - The operation was successful. The result value is the new user token.
     /// </returns>
     [HttpGet("getToken/")]
-    public async Task<IActionResult> getToken()
+    public async Task<IActionResult> GetToken()
     {
         var token = "";
-        var user_token = VaultCon.GenerateToken(80);
+        var userToken = VaultCon.GenerateToken(80);
         var tokenExists = true;
         while (tokenExists)
         {
             if (tokenExists)
-                user_token = VaultCon.GenerateToken(80);
-            tokenExists = await _vaultCon.checkToken(user_token);
+                userToken = VaultCon.GenerateToken(80);
+            tokenExists = await _vaultCon.CheckToken(userToken);
         }
 
         for (var i = 0; i < _vaultCon._tokens.Count; i++)
@@ -54,14 +53,14 @@ public class apidemo : ControllerBase
                 _vaultCon._defpolicyname,
                 _vaultCon._addresses[i],
                 _vaultCon._tokens[i],
-                user_token
+                userToken
             );
 
         var dataToSave = new JsonObject { ["keys"] = new JsonArray() };
         dataToSave.Add("timestamp", ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds());
         var jsonString = dataToSave.ToString();
 
-        await PutSecret(user_token, JsonDocument.Parse(jsonString).RootElement);
+        await PutSecret(userToken, JsonDocument.Parse(jsonString).RootElement);
 
         return Ok(token);
     }
@@ -75,7 +74,7 @@ public class apidemo : ControllerBase
     /// BadRequestObjectResult (400) - The operation failed due to an invalid request format, missing token, internal server error, or unknown user token.
     /// </returns>
     [HttpPost("addSecrets/")]
-    public async Task<IActionResult> addSecrets([FromBody] SecretModel secretModel)
+    public async Task<IActionResult> AddSecrets([FromBody] SecretModel secretModel)
     {
         var properties = secretModel.GetType().GetProperties().Select(p => p.Name).ToList();
         if (!properties.SequenceEqual(new List<string> { "Token", "Data" }))
@@ -85,26 +84,24 @@ public class apidemo : ControllerBase
             return BadRequest("Token and Data are required.");
 
         var oldToken = secretModel.Token;
-        var newToken = "";
         var jsonData = secretModel.Data;
 
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
         var jsonString = JsonSerializer.Serialize(jsonData, options);
         var jsonElement = JsonDocument.Parse(jsonString).RootElement;
 
-        var tokenExists = await _vaultCon.checkToken(oldToken);
-        var ret = 0;
+        var tokenExists = await _vaultCon.CheckToken(oldToken);
         if (tokenExists)
         {
             var validationResult = ValidateJsonData(jsonElement);
             if (validationResult != null)
                 return validationResult;
 
-            ret = await PutSecret(oldToken, jsonElement);
+            var ret = await PutSecret(oldToken, jsonElement);
 
             if (ret > 199 && ret < 300)
             {
-                newToken = await RotateToken(oldToken, secretModel.Data.timestamp);
+                var newToken = await RotateToken(oldToken, secretModel.Data.timestamp);
                 var returnObject = new { returnCode = ret, newToken };
                 return Ok(returnObject);
             }
@@ -127,12 +124,11 @@ public class apidemo : ControllerBase
     /// StatusCodeResult (500) - The operation failed due to an internal server error.
     /// </returns>
     [HttpPost("getSecrets/")]
-    public async Task<IActionResult> getSecrets([FromBody] TokenModel tokenModel)
+    public async Task<IActionResult> GetSecrets([FromBody] TokenModel tokenModel)
     {
         var oldToken = tokenModel.Token;
-        var newToken = "";
-        var tokenExists = await _vaultCon.checkToken(oldToken);
-        object ret = null;
+        var tokenExists = await _vaultCon.CheckToken(oldToken);
+        object ret = null!;
         if (tokenExists)
         {
             for (var i = 0; i < _vaultCon._addresses.Count; i++)
@@ -152,13 +148,12 @@ public class apidemo : ControllerBase
                     return StatusCode(500, "Internal server Error");
                 }
             }
-
-            var retJObject = JObject.Parse(ret.ToString());
+            var retJObject = JObject.Parse(ret.ToString() ?? throw new InvalidOperationException());
             var data = retJObject.GetValue("data");
-            newToken = await RotateToken(oldToken, data["timestamp"].Value<long>());
-            var timestamp = Checktimestamp(oldToken, newToken, data["timestamp"].Value<long>());
+            var newToken = await RotateToken(oldToken, (data!["timestamp"] ?? throw new InvalidOperationException()).Value<long>());
+            var timestamp = Checktimestamp(oldToken, newToken, (data["timestamp"] ?? throw new InvalidOperationException()).Value<long>());
             data["timestamp"] = timestamp;
-            var returnObject = new { data = data, newToken };
+            var returnObject = new { data, newToken };
             return Ok(returnObject);
         }
 
@@ -174,11 +169,10 @@ public class apidemo : ControllerBase
     /// BadRequestObjectResult (400) - The operation failed due to an unknown user token.
     /// </returns>
     [HttpDelete("deleteSecrets/")]
-    public async Task<IActionResult> deleteSecrets([FromBody] TokenModel tokenModel)
+    public async Task<IActionResult> DeleteSecrets([FromBody] TokenModel tokenModel)
     {
         var oldToken = tokenModel.Token;
-        var newToken = "";
-        var tokenExists = await _vaultCon.checkToken(oldToken);
+        var tokenExists = await _vaultCon.CheckToken(oldToken);
         var ret = 0;
         if (tokenExists)
         {
@@ -191,7 +185,7 @@ public class apidemo : ControllerBase
             var jsonString = dataToSave.ToString();
             await PutSecret(oldToken, JsonDocument.Parse(jsonString).RootElement);
 
-            newToken = await RotateToken(oldToken, 0);
+            var newToken = await RotateToken(oldToken, 0);
             var returnObject = new
             {
                 tokenExists,
@@ -217,8 +211,8 @@ public class apidemo : ControllerBase
     public async Task<IActionResult> GenerateAndSaveKeyPair([FromBody] KeyPairModel keyPairModel)
     {
         var oldToken = keyPairModel.Token;
-        var tokenExists = await _vaultCon.checkToken(oldToken);
-        object ret = null;
+        var tokenExists = await _vaultCon.CheckToken(oldToken);
+        object ret = null!;
 
         if (tokenExists)
         {
@@ -229,7 +223,7 @@ public class apidemo : ControllerBase
                 {
                     ret = secret;
                 }
-                else if (
+                if (
                     ret is JObject
                     && secret is JObject
                     && JToken.DeepEquals((JObject)ret, (JObject)secret)
@@ -240,15 +234,15 @@ public class apidemo : ControllerBase
                 }
             }
 
-            var retJObject = JObject.Parse(ret.ToString());
-            var keysArray = (JArray)retJObject["data"]["keys"];
+            var retJObject = JObject.Parse(ret.ToString() ?? throw new InvalidOperationException());
+            var keysArray = (JArray)retJObject["data"]?["keys"]!;
 
-            var existingKey = keysArray.FirstOrDefault(obj =>
+            var existingKey = (keysArray ?? throw new InvalidOperationException()).FirstOrDefault(obj =>
                 obj is JObject jObj
                 && jObj["id"] != null
-                && jObj["id"].Value<string>().ToLower() == keyPairModel.Name.ToLower()
+                && (jObj["id"] ?? throw new InvalidOperationException()).Value<string>()?.ToLower() == keyPairModel.Name.ToLower()
             );
-            var newToken = "";
+            string newToken;
             if (existingKey != null)
             {
                 var errorResponse = new
@@ -258,7 +252,7 @@ public class apidemo : ControllerBase
                 return BadRequest(errorResponse);
             }
 
-            var keyPair = new JObject();
+            JObject keyPair;
 
             if (keyPairModel.Type.ToLower().Equals("ecdh"))
             {
@@ -270,10 +264,7 @@ public class apidemo : ControllerBase
             }
             else if (keyPairModel.Type.ToLower().Equals("aes"))
             {
-                if (
-                    !Enum.GetNames(typeof(Crypto.SymmetricModes))
-                        .Any(mode => mode.ToLower() == keyPairModel.CipherType.ToLower())
-                    || !Enum.TryParse(
+                if (Enum.GetNames(typeof(Crypto.SymmetricModes)).All(mode => mode.ToLower() != keyPairModel.CipherType.ToLower()) || !Enum.TryParse(
                         keyPairModel.CipherType,
                         true,
                         out Crypto.SymmetricModes symmetricMode
@@ -344,20 +335,19 @@ public class apidemo : ControllerBase
             }
             else
             {
-                var data = new JObject();
-                data.Add("keys", new JArray { keyPair });
+                var data = new JObject { { "keys", new JArray { keyPair } } };
                 retJObject.Add("data", data);
             }
-            newToken = await RotateToken(oldToken, retJObject["data"]["timestamp"].Value<long>());
+            newToken = await RotateToken(oldToken, (retJObject["data"]?["timestamp"] ?? throw new InvalidOperationException()).Value<long>());
             var timestamp = Checktimestamp(
                 oldToken,
                 newToken,
-                retJObject["data"]["timestamp"].Value<long>()
+                (retJObject["data"]?["timestamp"] ?? throw new InvalidOperationException()).Value<long>()
             );
-            retJObject["data"]["timestamp"] = timestamp;
+            retJObject["data"]!["timestamp"] = timestamp;
             var putRetCode = await PutSecret(
                 oldToken,
-                JsonDocument.Parse(retJObject["data"].ToString()).RootElement
+                JsonDocument.Parse(retJObject["data"]?.ToString() ?? throw new InvalidOperationException()).RootElement
             );
             if (putRetCode >= 400 && putRetCode < 600)
                 return StatusCode(
@@ -382,7 +372,7 @@ public class apidemo : ControllerBase
     /// If the token does not exist, the method returns 0. If the token exists, the method returns the result of the CreateSecret operation.</returns>
     private async Task<int> PutSecret(string token, JsonElement data)
     {
-        var tokenExists = await _vaultCon.checkToken(token);
+        var tokenExists = await _vaultCon.CheckToken(token);
         var ret = 0;
         if (tokenExists)
         {
