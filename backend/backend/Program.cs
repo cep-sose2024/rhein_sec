@@ -27,7 +27,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateBootstrapLogger();
 
 builder.Host.UseSerilog(
-    (context, services, configuration) =>
+    (context, _, configuration) =>
         configuration
             .ReadFrom.Configuration(context.Configuration)
             .Enrich.FromLogContext()
@@ -39,13 +39,27 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
     options.MaxAge = TimeSpan.FromDays(365);
 });
-GenerateCertificatesIfNotExist("certs");
+var useHttps = true;
+if (!CheckCerts("certs"))
+{
+    Log.Error("\n\nWARNING Missing certificates! Defaulting to HTTP.\n\n");
+    useHttps = false;
+    if (!args.Contains("-http"))
+    {
+        Log.Error("Missing -http argument ");
+        return;
+    }
+}
+else if (args.Contains("-http"))
+{
+    Log.Warning("Certificates are present, ignoring -http argument and defaulting to HTTPS.");
+}
 builder.Services.AddLogging(loggingBuilder =>
 {
     loggingBuilder.AddSerilog(Log.Logger);
 });
 builder.WebHost.ConfigureKestrel(
-    (context, serverOptions) =>
+    (_, serverOptions) =>
     {
         serverOptions.AddServerHeader = false;
 
@@ -65,54 +79,63 @@ builder.WebHost.ConfigureKestrel(
             }
         }
 
-        var cert = new X509Certificate2("certs/cert.crt");
-
-        RsaPrivateCrtKeyParameters privateKeyParameters;
-        using (var reader = File.OpenText("certs/key.key"))
+        if (!useHttps)
         {
-            privateKeyParameters = (RsaPrivateCrtKeyParameters)new PemReader(reader).ReadObject();
+            serverOptions.ListenAnyIP(portNumber);
         }
-
-        var rsaParams = DotNetUtilities.ToRSAParameters(privateKeyParameters);
-        using (var rsa = RSA.Create())
+        else
         {
-            rsa.ImportParameters(rsaParams);
+            var cert = new X509Certificate2("certs/cert.crt");
 
-            var certWithKey = cert.CopyWithPrivateKey(rsa);
+            RsaPrivateCrtKeyParameters privateKeyParameters;
+            using (var reader = File.OpenText("certs/key.key"))
+            {
+                privateKeyParameters = (RsaPrivateCrtKeyParameters)new PemReader(reader).ReadObject();
+            }
 
-            serverOptions.ListenAnyIP(
-                portNumber,
-                listenOptions =>
-                {
-                    listenOptions.UseHttps(
-                        certWithKey,
-                        options =>
-                        {
-                            options.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
-                            options.ClientCertificateMode = ClientCertificateMode.NoCertificate;
-                            options.OnAuthenticate = (context, sslOptions) =>
+            var rsaParams = DotNetUtilities.ToRSAParameters(privateKeyParameters);
+            using (var rsa = RSA.Create())
+            {
+                rsa.ImportParameters(rsaParams);
+
+                var certWithKey = cert.CopyWithPrivateKey(rsa);
+
+                serverOptions.ListenAnyIP(
+                    portNumber,
+                    listenOptions =>
+                    {
+                        listenOptions.UseHttps(
+                            certWithKey,
+                            options =>
                             {
-                                sslOptions.CipherSuitesPolicy = new CipherSuitesPolicy(
-                                    new[]
-                                    {
-                                        // TLS 1.3 Ciphers
-                                        TlsCipherSuite.TLS_AES_128_GCM_SHA256,
-                                        TlsCipherSuite.TLS_AES_256_GCM_SHA384,
-                                        TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
-                                        // TLS 1.2 Ciphers
-                                        TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-                                        TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-                                        TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-                                        TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-                                        TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-                                        TlsCipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
-                                    }
-                                );
-                            };
-                        }
-                    );
-                }
-            );
+                                options.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+                                options.ClientCertificateMode = ClientCertificateMode.NoCertificate;
+                                options.OnAuthenticate = (_, sslOptions) =>
+                                {
+#pragma warning disable CA1416
+                                    sslOptions.CipherSuitesPolicy = new CipherSuitesPolicy(
+                                        new[]
+                                        {
+                                            // TLS 1.3 Ciphers
+                                            TlsCipherSuite.TLS_AES_128_GCM_SHA256,
+                                            TlsCipherSuite.TLS_AES_256_GCM_SHA384,
+                                            TlsCipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+                                            // TLS 1.2 Ciphers
+                                            TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+                                            TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+                                            TlsCipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+                                            TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+                                            TlsCipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+                                            TlsCipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+                                        }
+                                    );
+#pragma warning restore CA1416
+                                };
+                            }
+                        );
+                    }
+                );
+            }
         }
     }
 );
@@ -143,22 +166,27 @@ if (outputFileArgumentIndex >= 0 && args.Length > outputFileArgumentIndex + 1)
 Log.Logger = loggerConfiguration.CreateLogger();
 
 var app = builder.Build();
-app.Use(
-    async (context, next) =>
-    {
-        context.Response.Headers.Add(
-            "Strict-Transport-Security",
-            "max-age=31536000; includeSubDomains"
-        );
-        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-        context.Response.Headers.Add("X-Frame-Options", "SAMEORIGIN");
-        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-        await next();
-    }
-);
 
-app.UseHsts();
-app.UseHttpsRedirection();
+if (useHttps)
+{
+    app.Use(
+        async (context, next) =>
+        {
+            context.Response.Headers.Append(
+                "Strict-Transport-Security",
+                "max-age=31536000; includeSubDomains"
+            );
+            context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            context.Response.Headers.Append("X-Frame-Options", "SAMEORIGIN");
+            context.Response.Headers.Append("X-XSS-Protection", "1; mode=block");
+            await next();
+        }
+    );
+
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -174,7 +202,7 @@ if (app.Environment.IsDevelopment() || args.Contains("--UseSwagger"))
     lifetime.ApplicationStarted.Register(() =>
     {
         var server = app.Services.GetService(typeof(IServer)) as IServer;
-        var addresses = server.Features.Get<IServerAddressesFeature>().Addresses;
+        var addresses = server!.Features.Get<IServerAddressesFeature>()!.Addresses;
         foreach (var address in addresses)
         {
             var swaggerUrl = $"{address}/swagger";
@@ -204,46 +232,10 @@ Log.Information("Application is running!");
 
 app.Run();
 
-static void GenerateCertificatesIfNotExist(string certPath)
+static bool CheckCerts(string path)
 {
-    if (!Directory.Exists(certPath))
-        Directory.CreateDirectory(certPath);
+    string privateKeyPath = Path.Combine(path, "key.key");
+    string certificatePath = Path.Combine(path, "cert.crt");
 
-    var keyPath = Path.Combine(certPath, "key.key");
-    var certFilePath = Path.Combine(certPath, "cert.crt");
-
-    if (!File.Exists(keyPath) || !File.Exists(certFilePath))
-    {
-        Console.WriteLine("No certificates found, creating certificates");
-
-        var genKeyProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Arguments =
-                    $"-c \"openssl genpkey -algorithm RSA -out {keyPath} -pkeyopt rsa_keygen_bits:2048\""
-            }
-        };
-        genKeyProcess.Start();
-        genKeyProcess.WaitForExit();
-
-        var genCertProcess = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "/bin/bash",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                Arguments =
-                    $"-c \"openssl req -new -x509 -key {keyPath} -out {certFilePath} -days 365 -subj \"/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd/CN=localhost\" -addext \"subjectAltName = DNS:localhost, IP:127.0.0.1\"\""
-            }
-        };
-        genCertProcess.Start();
-        genCertProcess.WaitForExit();
-    }
+    return File.Exists(privateKeyPath) && File.Exists(certificatePath);
 }

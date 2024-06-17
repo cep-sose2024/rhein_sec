@@ -44,7 +44,7 @@ Network key storage is designed to solve the issue of some devices not having a 
 
 * ASP .NET core 8.0.
 * Hashicorp Vault 1.16.2.
-* Rust for the client side of the application.
+* [Rust](https://github.com/cep-sose2024/rheinsec_rust-crypto) for the client side of the application.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -163,7 +163,7 @@ The `token_refresh` variable specifies the lifespan of the tokens (in seconds) b
 ### Using the Backend Server
 Assuming you have already downloaded the backend server executable from the releases and configured the `nksConfig.json` file, you can run it via:
 ```
-./backend <--UseSwagger> -o <your_log_file> -port <port_number> -insecure
+./backend <--UseSwagger> -o <your_log_file> -port <port_number> -insecure -http
 ```
 
 [Backend README](backend/backend/README.md)

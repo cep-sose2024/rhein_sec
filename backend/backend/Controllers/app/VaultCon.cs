@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using backend.Controllers.example;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -14,11 +13,11 @@ namespace backend.Controllers.app;
 /// </summary>
 public class VaultCon
 {
-    private static readonly HttpClient client = HttpClientHelper.CreateClient();
+    private static readonly HttpClient Client = HttpClientHelper.CreateClient();
     public readonly string _defpolicyname = "user";
     public List<string> _addresses = new();
     public List<string> _tokens = new();
-    public long _token_refresh = 0;
+    public long _token_refresh;
 
     /// <summary>
     /// Initializes a new instance of the VaultCon class.
@@ -28,7 +27,7 @@ public class VaultCon
     {
         ReadConfig();
         for (var i = 0; i < _addresses.Count; i++)
-            CreateUserPolicy(_defpolicyname, PolicyOptions.CRUDPolicy, _addresses[i], _tokens[i]);
+            _ = CreateUserPolicy(_defpolicyname, PolicyOptions.CrudPolicy, _addresses[i], _tokens[i]);
     }
 
     /// <summary>
@@ -51,10 +50,10 @@ public class VaultCon
 
         var json = new JObject { ["policy"] = policy };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
-        var response = await client.PostAsync(url, content);
+        await Client.PostAsync(url, content);
 
         return policyName;
     }
@@ -91,14 +90,14 @@ public class VaultCon
             ["type"] = "service"
         };
         var content = new StringContent(json.ToString(), Encoding.UTF8, "application/json");
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
-        var response = await client.PostAsync(url, content);
+        var response = await Client.PostAsync(url, content);
         var responseContent = await response.Content.ReadAsStringAsync();
         var responseJson = JObject.Parse(responseContent);
-        var user_token = responseJson["auth"]["client_token"].ToString();
-        return new JObject { ["token"] = user_token }.ToString();
+        var userToken2 = responseJson["auth"]!["client_token"]!.ToString();
+        return new JObject { ["token"] = userToken2 }.ToString();
     }
 
     /// <summary>
@@ -115,10 +114,10 @@ public class VaultCon
         // Create a StringContent using the JSON string directly
         var content = new StringContent(newSecretJson, Encoding.UTF8, "application/json");
 
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
-        var response = await client.PostAsync(url, content);
+        var response = await Client.PostAsync(url, content);
 
         return (int)response.StatusCode;
     }
@@ -133,10 +132,10 @@ public class VaultCon
     {
         var url = $"{address}/v1/cubbyhole/secrets";
 
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
-        var response = await client.GetAsync(url);
+        var response = await Client.GetAsync(url);
         var responseBody = await response.Content.ReadAsStringAsync();
 
         var responseDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(responseBody);
@@ -165,10 +164,10 @@ public class VaultCon
     {
         var url = $"{address}/v1/cubbyhole/secrets";
 
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", token);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", token);
 
-        var response = await client.DeleteAsync(url);
+        var response = await Client.DeleteAsync(url);
         return (int)response.StatusCode;
     }
 
@@ -187,14 +186,14 @@ public class VaultCon
             var jsonText = File.ReadAllText(jsonFilePath);
             var jsonObject = JObject.Parse(jsonText);
 
-            var jsonArray = (JArray)jsonObject["vaults"];
-            _token_refresh = (long)jsonObject["token_refresh"];
+            var jsonArray = (JArray)jsonObject["vaults"]!;
+            _token_refresh = (long)jsonObject["token_refresh"]!;
             foreach (var configObject in jsonArray)
             {
-                var address = (string)configObject["address"];
+                var address = (string)configObject["address"]!;
                 if (address.EndsWith("/"))
                     address = address.Remove(address.Length - 1);
-                var token = (string)configObject["token"];
+                var token = (string)configObject["token"]!;
                 _addresses.Add(address);
                 _tokens.Add(token);
             }
@@ -218,16 +217,16 @@ public class VaultCon
     {
         const string valid = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*-_";
         var res = new StringBuilder();
-        using (var rng = new RNGCryptoServiceProvider())
+        var rng = RandomNumberGenerator.Create();
+
+        var uintBuffer = new byte[4];
+        while (length-- > 0)
         {
-            var uintBuffer = new byte[4];
-            while (length-- > 0)
-            {
-                rng.GetBytes(uintBuffer);
-                var num = BitConverter.ToUInt32(uintBuffer, 0);
-                res.Append(valid[(int)(num % (uint)valid.Length)]);
-            }
+            rng.GetBytes(uintBuffer);
+            var num = BitConverter.ToUInt32(uintBuffer, 0);
+            res.Append(valid[(int)(num % (uint)valid.Length)]);
         }
+        rng.Dispose();
 
         return res.ToString();
     }
@@ -243,12 +242,12 @@ public class VaultCon
     {
         var url = $"{address}/v1/auth/token/revoke";
 
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", xvToken);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", xvToken);
 
         var requestBody = $"{{\"token\": \"{tokenToDelete}\"}}";
 
-        var response = await client.PostAsync(url, new StringContent(requestBody));
+        var response = await Client.PostAsync(url, new StringContent(requestBody));
 
         return (int)response.StatusCode;
     }
@@ -264,11 +263,11 @@ public class VaultCon
     {
         var url = $"{address}/v1/auth/token/lookup";
 
-        client.DefaultRequestHeaders.Remove("X-Vault-Token");
-        client.DefaultRequestHeaders.Add("X-Vault-Token", rootToken);
+        Client.DefaultRequestHeaders.Remove("X-Vault-Token");
+        Client.DefaultRequestHeaders.Add("X-Vault-Token", rootToken);
 
         var requestBody = $"{{\"token\": \"{userToken}\"}}";
-        var response = await client.PostAsync(url, new StringContent(requestBody));
+        var response = await Client.PostAsync(url, new StringContent(requestBody));
         var responseBody = await response.Content.ReadAsStringAsync();
         bool tokenExists;
         if (responseBody.Contains("errors") && responseBody.Contains("bad token"))
@@ -283,7 +282,7 @@ public class VaultCon
     /// </summary>
     /// <param name="userToken">The user token to be checked.</param>
     /// <returns>A task that represents the asynchronous operation. The task result indicates whether the token exists at all addresses.</returns>
-    public async Task<bool> checkToken(string userToken)
+    public async Task<bool> CheckToken(string userToken)
     {
         for (var i = 0; i < _addresses.Count(); i++)
             if (!await TokenExists(_tokens[i], userToken, _addresses[i]))
@@ -300,6 +299,7 @@ public class VaultCon
     /// <param name="token">The Vault token used for authentication.</param>
     /// <param name="userToken">The user token to be rotated.</param>
     /// <param name="newToken">The new token to be created.</param>
+    /// <param name="timestamp">The Time to live for the token</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the new user token.</returns>
     public async Task<string> RotateUserToken(
         string policy,
@@ -310,11 +310,10 @@ public class VaultCon
         long timestamp
     )
     {
-        //store secret in variable
         var secretsObject = await GetSecrets(userToken, address);
         var secretsString = secretsObject.ToString();
         var secretsDeserialized = JsonConvert.DeserializeObject<Dictionary<string, object>>(
-            secretsString
+            secretsString!
         );
         JsonElement secrets = default;
         if (secretsDeserialized != null && secretsDeserialized.ContainsKey("data"))

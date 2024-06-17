@@ -1,3 +1,5 @@
+namespace backend.Controllers.app;
+
 public static class HttpClientHelper
 {
     public static readonly HttpClientHandler Handler;

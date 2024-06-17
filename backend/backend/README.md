@@ -24,7 +24,7 @@ In the same directory as the Dockerfile.
 The backend can be run with the following optional arguments:
 
 ```bash
-./backend --UseSwagger -o <your_log_file> --port <port_number> --insecure
+./backend --UseSwagger -o <your_log_file> --port <port_number> --insecure -http
 ```
 
 ### Vault configuration File
